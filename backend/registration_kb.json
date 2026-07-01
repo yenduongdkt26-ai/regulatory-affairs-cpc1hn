@@ -1,0 +1,217 @@
+{
+  "categories": {
+    "thuoc": {
+      "title": "Đăng ký lưu hành Thuốc & Nguyên liệu làm thuốc",
+      "legalBasis": [
+        "Luật Dược số 105/2016/QH13 và Luật Dược sửa đổi bổ sung năm 2024",
+        "Nghị định số 163/2025/NĐ-CP của Chính phủ quy định chi tiết thi hành Luật Dược",
+        "Thông tư số 12/2025/TT-BYT quy định về đăng ký lưu hành thuốc, nguyên liệu làm thuốc (có hiệu lực từ 01/07/2025, thay thế TT 08/2022/TT-BYT)",
+        "Thông tư số 07/2022/TT-BYT về thuốc phải thử tương đương sinh học và báo cáo số liệu tương đương sinh học",
+        "Thông tư số 01/2018/TT-BYT được sửa đổi bởi Thông tư 23/2023/TT-BYT (Văn bản hợp nhất số 01/VBHN-BYT) về ghi nhãn thuốc và tờ hướng dẫn sử dụng",
+        "Thông tư số 18/2026/TT-BYT quy định về thuốc phải kiểm soát đặc biệt (có hiệu lực từ 16/07/2026)"
+      ],
+      "authority": "Cục Quản lý Dược (DAV) - Bộ Y tế Việt Nam",
+      "timeline": "Cấp mới: 9 - 12 tháng từ ngày nhận đủ hồ sơ hợp lệ. Gia hạn/Thay đổi: 3 - 6 tháng.",
+      "dossierChecklist": [
+        "Đơn đề nghị cấp giấy đăng ký lưu hành thuốc, nguyên liệu làm thuốc (Mẫu theo TT 12/2025/TT-BYT)",
+        "Giấy phép thành lập hoặc Giấy chứng nhận đủ điều kiện kinh doanh dược của cơ sở đăng ký",
+        "Giấy chứng nhận sản phẩm dược phẩm (CPP) đối với thuốc nhập khẩu",
+        "Nhãn thuốc và Tờ hướng dẫn sử dụng (thiết kế theo VBHN 01/VBHN-BYT)",
+        "Hồ sơ hành chính: Giấy ủy quyền, Giấy chứng nhận GMP của cơ sở sản xuất",
+        "Hồ sơ kỹ thuật theo định dạng ACTD hoặc ICH (bao gồm Hồ sơ chất lượng, Dữ liệu tiền lâm sàng, Dữ liệu lâm sàng)",
+        "Báo cáo số liệu tương đương sinh học đối với các thuốc thuộc danh mục quy định tại TT 07/2022/TT-BYT",
+        "Hồ sơ đối với thuốc kiểm soát đặc biệt (nếu có) tuân thủ quy định nghiêm ngặt của TT 18/2026/TT-BYT"
+      ],
+      "steps": [
+        "Bước 1: Cơ sở chuẩn bị hồ sơ đăng ký theo đúng quy định của Thông tư 12/2025/TT-BYT.",
+        "Bước 2: Nộp hồ sơ trực tuyến qua Cổng dịch vụ công của Cục Quản lý Dược.",
+        "Bước 3: Cục Quản lý Dược tiếp nhận hồ sơ, chuyển chuyên gia thẩm định hồ sơ kỹ thuật và hành chính.",
+        "Bước 4: Họp Hội đồng cấp giấy đăng ký lưu hành thuốc (Bộ Y tế).",
+        "Bước 5: Trả kết quả: Cấp giấy đăng ký lưu hành thuốc (hiệu lực tối đa 5 năm)."
+      ],
+      "faqs": [
+        {
+          "question": "Những loại thuốc nào bắt buộc phải thử tương đương sinh học (BE)?",
+          "answer": "Theo Thông tư số 07/2022/TT-BYT, các thuốc generic chứa dược chất thuộc danh mục quy định (như Metformin, Gliclazide, Amlodipine, Atorvastatin, các kháng sinh nhóm Beta-lactam, v.v.) bắt buộc phải thử tương đương sinh học và nộp báo cáo số liệu BE khi đăng ký lưu hành tại Việt Nam."
+        },
+        {
+          "question": "Nhãn thuốc và tờ hướng dẫn sử dụng cần tuân thủ gì từ năm 2024?",
+          "answer": "Theo Thông tư 23/2023/TT-BYT (sửa đổi Thông tư 01/2018/TT-BYT), nhãn thuốc khuyến khích tích hợp mã QR hoặc mã vạch DMC để liên kết đến Tờ hướng dẫn sử dụng điện tử. Đối với thuốc nhập khẩu trong trường hợp cấp bách hoặc thuốc phóng xạ, có các quy định nới lỏng về nhãn gốc nhưng bắt buộc phải có nhãn phụ tiếng Việt đầy đủ."
+        },
+        {
+          "question": "Quy định mới về thuốc kiểm soát đặc biệt năm 2026 là gì?",
+          "answer": "Thông tư số 18/2026/TT-BYT (hiệu lực 16/07/2026) quy định chi tiết quy trình quản lý, bảo quản biệt trữ, vận chuyển và báo cáo định kỳ đối với thuốc gây nghiện, hướng thần, tiền chất. Danh mục thuốc kiểm soát đặc biệt được cập nhật bổ sung các hoạt chất mới như Etomidate, Carisoprodol (quản lý như thuốc hướng thần từ 01/06/2026)."
+        }
+      ]
+    },
+    "tpcn": {
+      "title": "Đăng ký bản Công bố sản phẩm Thực phẩm chức năng / TPBVSK",
+      "legalBasis": [
+        "Luật An toàn thực phẩm số 55/2010/QH12 và Văn bản hợp nhất số 61/VBHN-VPQH năm 2025",
+        "Nghị định số 46/2026/NĐ-CP của Chính phủ quy định chi tiết thi hành Luật An toàn thực phẩm (ban hành 26/01/2026, thay thế Nghị định 15/2018/NĐ-CP)"
+      ],
+      "authority": "Cục An toàn thực phẩm (VFA) - Bộ Y tế Việt Nam",
+      "timeline": "Sản phẩm bảo vệ sức khỏe: 21 - 30 ngày làm việc. Thực phẩm thông thường/tự công bố: 3 - 5 ngày làm việc.",
+      "dossierChecklist": [
+        "Bản công bố sản phẩm (Mẫu số 02 ban hành kèm theo Nghị định 46/2026/NĐ-CP)",
+        "Giấy chứng nhận lưu hành tự do (CFS) hoặc Giấy chứng nhận xuất khẩu (Health Certificate) đối với sản phẩm nhập khẩu",
+        "Báo cáo thử nghiệm hiệu quả công dụng đối với sản phẩm công bố công dụng mới hoặc sản phẩm khuyên dùng cho người bệnh",
+        "Mẫu nhãn sản phẩm và tài liệu giải trình về công dụng, thành phần",
+        "Giấy chứng nhận cơ sở đủ điều kiện an toàn thực phẩm đạt yêu cầu Thực hành sản xuất tốt (GMP) đối với cơ sở sản xuất TPBVSK trong nước hoặc tương đương đối với cơ sở nước ngoài (theo yêu cầu của NĐ 46/2026/NĐ-CP)",
+        "Phiếu kết quả kiểm nghiệm sản phẩm trong vòng 12 tháng (đầy đủ các chỉ tiêu an toàn theo quy định kiểm nghiệm của Bộ Y tế)"
+      ],
+      "steps": [
+        "Bước 1: Doanh nghiệp chuẩn bị đầy đủ hồ sơ pháp lý và kiểm nghiệm sản phẩm tại phòng kiểm nghiệm được chỉ định.",
+        "Bước 2: Nộp hồ sơ trực tuyến trên hệ thống dịch vụ công của Cục An toàn thực phẩm (VFA).",
+        "Bước 3: Cục An toàn thực phẩm tiếp nhận hồ sơ, tiến hành thẩm định tính hợp lệ của thành phần công thức, chỉ tiêu an toàn và hồ sơ GMP.",
+        "Bước 4: Yêu cầu sửa đổi, bổ sung (nếu có). Doanh nghiệp giải trình bổ sung.",
+        "Bước 5: Cục An toàn thực phẩm cấp Giấy tiếp nhận đăng ký bản công bố sản phẩm (hiệu lực vô thời hạn nếu không thay đổi công thức/nhãn)."
+      ],
+      "faqs": [
+        {
+          "question": "Nghị định 46/2026/NĐ-CP quy định mới gì về nhân sự cơ sở sản xuất TPBVSK?",
+          "answer": "Nghị định 46/2026/NĐ-CP siết chặt quản lý sản xuất Thực phẩm bảo vệ sức khỏe (TPBVSK), yêu cầu người phụ trách chuyên môn kỹ thuật sản xuất của cơ sở đạt GMP bắt buộc phải có trình độ đại học trở lên thuộc một trong các chuyên ngành Y, Dược, Dinh dưỡng, An toàn thực phẩm hoặc Công nghệ thực phẩm và có tối thiểu 3 năm kinh nghiệm thực tế tại cơ sở sản xuất liên quan."
+        },
+        {
+          "question": "Thủ tục kiểm tra nhà nước về an toàn thực phẩm nhập khẩu thay đổi thế nào?",
+          "answer": "Nghị định 46/2026/NĐ-CP áp dụng 3 phương thức kiểm tra: Kiểm tra chặt (áp dụng cho sản phẩm cảnh báo hoặc không đạt trước đó), Kiểm tra thông thường (hồ sơ ngẫu nhiên), và Kiểm tra giảm (áp dụng cho các sản phẩm đã có lịch sử tuân thủ tốt hoặc đạt chứng nhận an toàn chuẩn quốc tế), giúp giảm tải thủ tục thông quan cho doanh nghiệp uy tín."
+        }
+      ]
+    },
+    "ttb": {
+      "title": "Công bố tiêu chuẩn / Đăng ký lưu hành Trang thiết bị y tế",
+      "legalBasis": [
+        "Nghị định số 98/2021/NĐ-CP của Chính phủ về quản lý trang thiết bị y tế",
+        "Nghị định số 04/2025/NĐ-CP sửa đổi, bổ sung một số điều của Nghị định 98/2021/NĐ-CP (có hiệu lực từ 01/01/2025)",
+        "Văn bản hợp nhất số 08/VBHN-BYT ngày 06/03/2026 hợp nhất các quy định quản lý thiết bị y tế",
+        "Thông tư số 10/2026/TT-BYT quy định về định mức sử dụng và phân cấp quyết định trong quản lý TTB y tế (có hiệu lực từ 01/07/2026)"
+      ],
+      "authority": "Sở Y tế (đối với Loại A, B) hoặc Cục Cơ sở hạ tầng và Thiết bị y tế - Bộ Y tế (đối với Loại C, D)",
+      "timeline": "Công bố Loại A, B: 3 - 5 ngày làm việc (cấp số lưu hành tự động trực tuyến). Cấp mới số lưu hành Loại C, D: 30 - 45 ngày làm việc.",
+      "dossierChecklist": [
+        "Văn bản đề nghị cấp số lưu hành trang thiết bị y tế",
+        "Bản phân loại trang thiết bị y tế theo quy định (do cơ sở đủ điều kiện thực hiện)",
+        "Giấy chứng nhận đạt tiêu chuẩn quản lý chất lượng ISO 13485 còn hiệu lực của cơ sở sản xuất",
+        "Giấy chứng nhận lưu hành tự do (CFS) đối với trang thiết bị y tế nhập khẩu",
+        "Giấy ủy quyền của chủ sở hữu trang thiết bị y tế cho cơ sở thực hiện đăng ký",
+        "Tài liệu mô tả tóm tắt kỹ thuật trang thiết bị y tế bằng tiếng Việt kèm tài liệu kỹ thuật chi tiết (CSDT)",
+        "Tài liệu hướng dẫn sử dụng và mẫu nhãn sẽ sử dụng khi lưu hành tại Việt Nam"
+      ],
+      "steps": [
+        "Bước 1: Thực hiện phân loại trang thiết bị y tế (Loại A, B, C, D) thông qua tổ chức đủ điều kiện.",
+        "Bước 2: Chuẩn bị hồ sơ theo quy định của Văn bản hợp nhất số 08/VBHN-BYT.",
+        "Bước 3: Nộp hồ sơ trực tuyến trên Cổng dịch vụ công Quốc gia về thiết bị y tế tại địa chỉ mới: https://vimda.moh.gov.vn.",
+        "Bước 4: Đối với loại A, B: Nhận số công bố lưu hành tự động. Đối với loại C, D: Cục Hạ tầng và Thiết bị y tế thẩm định hồ sơ và cấp số lưu hành.",
+        "Bước 5: Doanh nghiệp thực hiện kê khai giá trước khi đưa sản phẩm ra lưu thông trên thị trường."
+      ],
+      "faqs": [
+        {
+          "question": "Nghị định 04/2025/NĐ-CP gỡ vướng những gì cho nhập khẩu trang thiết bị y tế?",
+          "answer": "Nghị định 04/2025/NĐ-CP sửa đổi cơ bản quy định nhập khẩu của Nghị định 98, tháo gỡ ách tắc bằng cách gia hạn hiệu lực các giấy phép nhập khẩu cũ, đơn giản hóa điều kiện cấp số lưu hành mới cho thiết bị y tế loại C và D, và tối ưu hóa việc phân cấp thẩm quyền giải quyết cho các đơn vị trực thuộc Bộ Y tế."
+        },
+        {
+          "question": "Quy định về lộ trình kiểm định thiết bị y tế năm 2026 là gì?",
+          "answer": "Theo Thông tư 59/2025/TT-BYT, lộ trình kiểm định an toàn và tính năng kỹ thuật đối với một số nhóm thiết bị y tế đặc thù bắt buộc phải hoàn thành và áp dụng kiểm định định kỳ sau ngày 30/06/2026 để bảo đảm an toàn vận hành tại các cơ sở khám chữa bệnh."
+        }
+      ]
+    },
+    "mypham": {
+      "title": "Công bố sản phẩm Mỹ phẩm",
+      "legalBasis": [
+        "Thông tư số 06/2011/TT-BYT của Bộ Y tế quy định về quản lý mỹ phẩm",
+        "Thông tư số 34/2025/TT-BYT sửa đổi, bổ sung một số điều của Thông tư 06/2011/TT-BYT (có hiệu lực từ ngày 18/08/2025)",
+        "Thông tư số 03/2026/TT-BYT bãi bỏ thủ tục cấp giấy xác nhận nội dung quảng cáo đối với mỹ phẩm (có hiệu lực từ 15/02/2026)"
+      ],
+      "authority": "Cục Quản lý Dược (đối với mỹ phẩm nhập khẩu) hoặc Sở Y tế tỉnh/thành phố (đối với mỹ phẩm sản xuất trong nước)",
+      "timeline": "3 - 5 ngày làm việc kể từ ngày nhận đủ hồ sơ hợp lệ và lệ phí theo quy định.",
+      "dossierChecklist": [
+        "Phiếu công bố sản phẩm mỹ phẩm (thiết kế và khai báo mẫu theo phụ lục mới của TT 34/2025/TT-BYT)",
+        "Dữ liệu công thức thành phần đầy đủ: Phải ghi danh pháp quốc tế INCI theo quy định của TT 34/2025/TT-BYT",
+        "Giấy ủy quyền (POA) của nhà sản xuất hoặc chủ sở hữu sản phẩm ủy quyền cho nhà nhập khẩu (được hợp pháp hóa lãnh sự đối với mỹ phẩm nhập khẩu)",
+        "Giấy chứng nhận lưu hành tự do (CFS) đối với mỹ phẩm nhập khẩu (được hợp pháp hóa lãnh sự)",
+        "Giấy chứng nhận đăng ký doanh nghiệp hoặc Giấy phép kinh doanh của đơn vị chịu trách nhiệm đưa sản phẩm ra thị trường"
+      ],
+      "steps": [
+        "Bước 1: Doanh nghiệp chuẩn bị hồ sơ, dịch thuật công chứng và hợp pháp hóa lãnh sự CFS và POA.",
+        "Bước 2: Khai báo hồ sơ trực tuyến thông qua Cổng thông tin một cửa Quốc gia (đối với mỹ phẩm nhập khẩu) hoặc Cổng dịch vụ công của Sở Y tế địa phương (đối với mỹ phẩm sản xuất trong nước).",
+        "Bước 3: Sử dụng chữ ký số ký số trên Phiếu công bố điện tử theo quy định mới tại Thông tư 34/2025/TT-BYT.",
+        "Bước 4: Cơ quan quản lý tiếp nhận hồ sơ, đối chiếu chỉ tiêu cấm/giới hạn theo hiệp định mỹ phẩm ASEAN và duyệt cấp số tiếp nhận Phiếu công bố.",
+        "Bước 5: Doanh nghiệp lưu giữ Hồ sơ thông tin sản phẩm (PIF) tại văn phòng để sẵn sàng xuất trình khi cơ quan quản lý tiến hành hậu kiểm."
+      ],
+      "faqs": [
+        {
+          "question": "Những thay đổi quan trọng nhất của Thông tư 34/2025/TT-BYT về công bố mỹ phẩm là gì?",
+          "answer": "Thông tư 34/2025/TT-BYT quy định rõ cách thức nộp phiếu công bố (bằng chữ ký số đối với hồ sơ trực tuyến, không cần đóng dấu của hộ kinh doanh nếu doanh nghiệp là hộ cá thể). Ngoài ra, thông tư này chuẩn hóa việc ghi thành phần theo danh pháp quốc tế INCI và quy định chi tiết thứ tự khai báo hàm lượng trong công thức."
+        },
+        {
+          "question": "Năm 2026 có cần xin giấy phép quảng cáo mỹ phẩm nữa không?",
+          "answer": "Không. Kể từ ngày 15/02/2026, theo Thông tư 03/2026/TT-BYT, Bộ Y tế chính thức bãi bỏ thủ tục đề nghị cấp Giấy xác nhận nội dung quảng cáo đối với mỹ phẩm. Doanh nghiệp tự chịu trách nhiệm hoàn toàn về tính trung thực, chính xác của nội dung quảng cáo sản phẩm trên các phương tiện truyền thông."
+        }
+      ]
+    },
+    "satkhuan": {
+      "title": "Đăng ký lưu hành Chế phẩm diệt côn trùng, diệt khuẩn dùng trong gia dụng và y tế",
+      "legalBasis": [
+        "Nghị định số 91/2016/NĐ-CP của Chính phủ về quản lý hóa chất, chế phẩm diệt côn trùng, diệt khuẩn dùng trong gia dụng và y tế",
+        "Nghị định số 129/2024/NĐ-CP và Nghị định 148/2025/NĐ-CP sửa đổi bổ sung Nghị định 91/2016/NĐ-CP",
+        "Luật Hóa chất 2025 (hiệu lực từ 01/01/2026) và Nghị định số 26/2026/NĐ-CP quy định chi tiết thi hành Luật Hóa chất",
+        "Thông tư số 05/2026/TT-BYT quy định về danh mục hóa chất cấm/nguy hiểm trong chế phẩm diệt côn trùng, diệt khuẩn (hiệu lực từ 15/05/2026, thay thế TT 11/2020/TT-BYT)"
+      ],
+      "authority": "Cục Quản lý Môi trường y tế (VIHEMA) - Bộ Y tế Việt Nam",
+      "timeline": "Cấp mới số đăng ký lưu hành: 30 - 45 ngày làm việc (thực tế có thể kéo dài do yêu cầu khảo nghiệm). Cấp lại/Gia hạn: 15 - 20 ngày làm việc.",
+      "dossierChecklist": [
+        "Văn bản đề nghị đăng ký lưu hành chế phẩm (Mẫu quy định tại NĐ 91/2016/NĐ-CP)",
+        "Giấy tờ pháp lý của cơ sở đăng ký và cơ sở sản xuất (Giấy chứng nhận đăng ký kinh doanh, chứng nhận đủ điều kiện sản xuất)",
+        "Tài liệu kỹ thuật của chế phẩm (Thành phần hoạt chất, dạng chế phẩm, tác dụng, hướng dẫn sử dụng)",
+        "Kết quả khảo nghiệm hiệu lực và tính an toàn của chế phẩm tại cơ sở y tế đủ điều kiện do Bộ Y tế chỉ định",
+        "Mẫu nhãn của chế phẩm và Tờ hướng dẫn sử dụng bằng tiếng Việt",
+        "Tài liệu chứng minh xuất xứ và CFS đối với chế phẩm nhập khẩu",
+        "Báo cáo công bố thông tin hóa chất nguy hiểm (nếu chế phẩm chứa hoạt chất nguy hiểm thuộc phụ lục Thông tư 05/2026/TT-BYT)"
+      ],
+      "steps": [
+        "Bước 1: Khảo nghiệm hiệu lực diệt khuẩn/diệt côn trùng của chế phẩm tại các viện kiểm nghiệm được Bộ Y tế chỉ định.",
+        "Bước 2: Soạn thảo hồ sơ hành chính và kỹ thuật theo quy định sửa đổi của Nghị định 91/2016/NĐ-CP.",
+        "Bước 3: Thực hiện nộp hồ sơ trực tuyến qua Cổng dịch vụ công của Cục Quản lý Môi trường y tế.",
+        "Bước 4: Hội đồng chuyên môn tiến hành thẩm định hồ sơ hành chính, kết quả khảo nghiệm và độc tính.",
+        "Bước 5: Bộ Y tế (Cục Quản lý Môi trường y tế) ban hành quyết định cấp số đăng ký lưu hành chế phẩm (hiệu lực 5 năm)."
+      ],
+      "faqs": [
+        {
+          "question": "Thông tư 05/2026/TT-BYT quy định cấm những hoạt chất nào trong chế phẩm diệt khuẩn?",
+          "answer": "Thông tư 05/2026/TT-BYT (hiệu lực từ 15/05/2026) thiết lập danh mục gồm 40 hoạt chất bị cấm sử dụng hoàn toàn trong chế phẩm diệt côn trùng, diệt khuẩn y tế và gia dụng do nguy cơ cao gây độc hại cho con người và môi trường. Ngoài ra, thông tư quy định danh mục 87 hóa chất nguy hiểm bắt buộc phải thực hiện báo cáo công bố thông tin chi tiết."
+        },
+        {
+          "question": "Thủ tục xin xác nhận quảng cáo hóa chất diệt khuẩn năm 2026 thay đổi thế nào?",
+          "answer": "Theo Thông tư 03/2026/TT-BYT quy định bãi bỏ các giấy phép xác nhận quảng cáo cũ, từ ngày 15/02/2026, doanh nghiệp kinh doanh chế phẩm diệt côn trùng, diệt khuẩn gia dụng và y tế không cần nộp hồ sơ xin giấy xác nhận nội dung quảng cáo tại Cục Quản lý Môi trường y tế nữa. Doanh nghiệp tự do thực hiện quảng cáo và tự chịu trách nhiệm pháp lý về tính chính xác của thông tin quảng cáo."
+        }
+      ]
+    },
+    "thongthuong": {
+      "title": "Xây dựng và Công bố Tiêu chuẩn Cơ sở (TCCS)",
+      "legalBasis": [
+        "Luật Tiêu chuẩn và Quy chuẩn kỹ thuật số 68/2006/QH11",
+        "Thông tư số 21/2007/TT-BKHCN của Bộ Khoa học và Công nghệ hướng dẫn về xây dựng và áp dụng tiêu chuẩn"
+      ],
+      "authority": "Doanh nghiệp tự xây dựng, ban hành và tự chịu trách nhiệm chất lượng trước pháp luật (Cục/Sở Khoa học & Công nghệ giám sát hậu kiểm)",
+      "timeline": "Tự thực hiện: Doanh nghiệp tự ban hành quyết định công bố (hiệu lực ngay khi ký quyết định).",
+      "dossierChecklist": [
+        "Quyết định ban hành tiêu chuẩn cơ sở của người đại diện pháp luật doanh nghiệp",
+        "Bản Tiêu chuẩn cơ sở tự xây dựng (bao gồm các chỉ tiêu kỹ thuật, phương pháp thử, ghi nhãn, đóng gói, bảo quản, vận chuyển)",
+        "Phiếu kết quả thử nghiệm chất lượng sản phẩm (được thực hiện tại phòng thử nghiệm đủ năng lực hoặc được chỉ định) phù hợp với các chỉ tiêu đã công bố trong TCCS"
+      ],
+      "steps": [
+        "Bước 1: Xác định các quy chuẩn kỹ thuật quốc gia (QCVN) hoặc tiêu chuẩn quốc gia (TCVN) liên quan đến sản phẩm để làm căn cứ đối chiếu.",
+        "Bước 2: Biên soạn dự thảo tiêu chuẩn cơ sở (TCCS) quy định rõ ràng chỉ tiêu cảm quan, lý hóa, vi sinh và giới hạn cho phép.",
+        "Bước 3: Gửi mẫu sản phẩm đi kiểm nghiệm chất lượng tại các trung tâm thử nghiệm có chứng nhận ISO 17025 hoặc được cơ quan nhà nước chỉ định.",
+        "Bước 4: Người đại diện pháp luật của doanh nghiệp ký quyết định ban hành tiêu chuẩn cơ sở.",
+        "Bước 5: Lưu trữ hồ sơ TCCS kèm theo kết quả kiểm nghiệm tại doanh nghiệp để phục vụ công tác thanh tra, kiểm tra hậu kiểm của cơ quan quản lý thị trường."
+      ],
+      "faqs": [
+        {
+          "question": "Thế nào là xây dựng Tiêu chuẩn cơ sở đúng pháp luật?",
+          "answer": "Theo Thông tư 21/2007/TT-BKHCN, tiêu chuẩn cơ sở không được trái với các quy chuẩn kỹ thuật quốc gia (QCVN) bắt buộc áp dụng. Các chỉ tiêu kỹ thuật và giới hạn an toàn quy định trong TCCS phải bằng hoặc nghiêm ngặt hơn so với Tiêu chuẩn quốc gia (TCVN) tương ứng nếu sản phẩm thuộc nhóm có khả năng gây mất an toàn."
+        }
+      ]
+    }
+  }
+}
