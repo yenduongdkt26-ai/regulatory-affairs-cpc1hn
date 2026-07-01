@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE_URL } from './config';
 import BackgroundEffect from './components/BackgroundEffect';
 import Login from './components/Login';
 import Sidebar from './components/Sidebar';
@@ -48,7 +49,7 @@ export default function App() {
     setError('');
 
     try {
-      const url = `http://localhost:5000/api/data?t=${Date.now()}${force ? '&refresh=true' : ''}`;
+      const url = `${API_BASE_URL}/api/data?t=${Date.now()}${force ? '&refresh=true' : ''}`;
       const res = await axios.get(url);
       setData(res.data);
     } catch (err) {
