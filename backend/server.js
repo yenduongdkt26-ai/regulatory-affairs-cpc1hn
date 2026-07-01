@@ -50,11 +50,27 @@ let dataCache = {
 // Helper: Read users from database.json
 function readUsers() {
   try {
+    const defaultAdmin = [
+      {
+        "id": "0999999999",
+        "employeeName": "Dương Hải Yến",
+        "username": "0999999999",
+        "password": "$2a$10$/RcXRZpl7S1YVE.weINd9u913B3RWpb5hgAdoOdwuu2GCMsewYUOK",
+        "role": "admin",
+        "isFirstLogin": false
+      }
+    ];
+
     if (!fs.existsSync(DB_FILE)) {
-      fs.writeFileSync(DB_FILE, JSON.stringify([]));
+      fs.writeFileSync(DB_FILE, JSON.stringify(defaultAdmin, null, 2));
     }
     const data = fs.readFileSync(DB_FILE, 'utf8');
-    return JSON.parse(data);
+    let parsed = JSON.parse(data);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      parsed = defaultAdmin;
+      fs.writeFileSync(DB_FILE, JSON.stringify(parsed, null, 2));
+    }
+    return parsed;
   } catch (err) {
     console.error("Error reading DB:", err);
     return [];
