@@ -1506,7 +1506,7 @@ app.delete('/api/kpi/records/:id', authenticateToken, requireAdmin, (req, res) =
 
 // Submit / Update KPI plan (month format: YYYY-MM)
 app.post('/api/kpi/plan', authenticateToken, (req, res) => {
-  const { month, baseKpiTarget, metrics, englishGroup, avgTestScore, trainingQuestion } = req.body;
+  const { month, baseKpiTarget, metrics, englishGroup, avgTestScore, trainingQuestion, isDraft } = req.body;
   if (!month || baseKpiTarget === undefined || !metrics) {
     return res.status(400).json({ error: "Vui lòng điền đầy đủ thông tin kế hoạch" });
   }
@@ -1520,7 +1520,7 @@ app.post('/api/kpi/plan', authenticateToken, (req, res) => {
       employeeName: req.user.employeeName,
       username: req.user.username,
       month,
-      status: 'plan_pending',
+      status: isDraft ? 'plan_draft' : 'plan_pending',
       baseKpiTarget: Number(baseKpiTarget) || 0,
       englishGroup: englishGroup || '',
       avgTestScore: avgTestScore !== undefined && avgTestScore !== '' ? Number(avgTestScore) : null,
@@ -1557,7 +1557,10 @@ app.post('/api/kpi/plan', authenticateToken, (req, res) => {
     }
 
     writeKpis(kpis);
-    res.json({ message: "Đăng ký kế hoạch KPI thành công!", record: recordData });
+    res.json({ 
+      message: isDraft ? "Lưu nháp kế hoạch KPI thành công!" : "Đăng ký kế hoạch KPI thành công!", 
+      record: recordData 
+    });
   } catch (err) {
     console.error("Error saving KPI plan:", err);
     res.status(500).json({ error: "Lỗi hệ thống khi lưu kế hoạch KPI" });

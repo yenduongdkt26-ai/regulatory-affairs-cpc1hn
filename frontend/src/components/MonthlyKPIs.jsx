@@ -188,6 +188,8 @@ export default function MonthlyKPIs() {
   // Helper to format state status into readable text & styles
   const getStatusBadge = (status) => {
     switch (status) {
+      case 'plan_draft':
+        return { text: 'Bản nháp kế hoạch', style: 'bg-slate-100 text-slate-600 border border-slate-300', icon: <ClipboardList size={12} /> };
       case 'plan_pending':
         return { text: 'Chờ duyệt kế hoạch', style: 'bg-amber-50 text-amber-600 border border-amber-200', icon: <Hourglass size={12} /> };
       case 'plan_approved':
@@ -295,8 +297,8 @@ export default function MonthlyKPIs() {
     });
   };
 
-  const submitPlan = async (e) => {
-    e.preventDefault();
+  const submitPlan = async (e, isDraft = false) => {
+    if (e) e.preventDefault();
     setError('');
     setSuccess('');
     try {
@@ -306,7 +308,8 @@ export default function MonthlyKPIs() {
         metrics: metricsRows,
         englishGroup,
         avgTestScore,
-        trainingQuestion
+        trainingQuestion,
+        isDraft
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -874,7 +877,7 @@ export default function MonthlyKPIs() {
                           {badge.text}
                         </span>
                         {/* Report/Plan Edit Action Triggers */}
-                        {rec.status === 'plan_rejected' && (
+                        {(rec.status === 'plan_rejected' || rec.status === 'plan_draft') && (
                           <button
                             onClick={() => handleOpenEditPlanModal(rec)}
                             className="px-3.5 py-1.5 bg-gradient-to-tr from-amber-500 to-amber-600 text-white rounded-xl text-xxs font-bold shadow-sm active:scale-95 hover:shadow-md flex items-center gap-1"
@@ -1844,6 +1847,13 @@ export default function MonthlyKPIs() {
                   className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl transition-all"
                 >
                   Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => submitPlan(e, true)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all shadow-sm active:scale-[0.98]"
+                >
+                  Lưu tạm thời (Bản nháp)
                 </button>
                 <button
                   type="submit"
