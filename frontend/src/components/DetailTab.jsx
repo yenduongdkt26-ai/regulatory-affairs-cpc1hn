@@ -6,13 +6,19 @@ import {
   CalendarClock, 
   ClipboardList,
   Copy,
-  Check
+  Check,
+  Search,
+  X
 } from 'lucide-react';
 import { copyTableToClipboard } from './copyHelper';
 
 export default function DetailTab({ sheetType, sheetName, employees, sheetData, user }) {
   const [expandedEmployee, setExpandedEmployee] = useState(null);
   const [copiedEmp, setCopiedEmp] = useState(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState('overdue'); // 'overdue', '1m', '2m'
+  const [searchTerm, setSearchTerm] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const getSheetHeaders = () => {
     switch (sheetType) {
@@ -116,6 +122,56 @@ export default function DetailTab({ sheetType, sheetName, employees, sheetData, 
   const targetFilesData = isUserAdmin 
     ? sheetData 
     : sheetData.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName));
+
+  const getModalData = () => {
+    switch (modalType) {
+      case 'overdue':
+        return targetFilesData.filter(item => item.daysDiff !== null && item.daysDiff < 0);
+      case '1m':
+        return targetFilesData.filter(item => item.daysDiff !== null && item.daysDiff >= 0 && item.daysDiff <= 30);
+      case '2m':
+        return targetFilesData.filter(item => item.daysDiff !== null && item.daysDiff > 30 && item.daysDiff <= 60);
+      default:
+        return [];
+    }
+  };
+
+  const getModalTitle = () => {
+    switch (modalType) {
+      case 'overdue': return `Danh sách hồ sơ quá hạn (${sheetName})`;
+      case '1m': return `Danh sách hồ sơ sắp hết hạn trong 1 tháng (${sheetName})`;
+      case '2m': return `Danh sách hồ sơ sắp hết hạn trong 2 tháng (${sheetName})`;
+      default: return 'Chi tiết hồ sơ';
+    }
+  };
+
+  const filteredModalData = getModalData().filter(item => {
+    const pName = item.productName || '';
+    const expName = item.exportName || '';
+    const inChargeStr = item.inCharge?.join(', ') || '';
+    const country = item.country || '';
+    const classification = item.classification || '';
+    const note = item.note || '';
+
+    return (
+      pName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      expName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inChargeStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      country.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      classification.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
+
+  const handleCopyModalTable = async () => {
+    const headers = getSheetHeaders();
+    const rows = getSheetRows(filteredModalData);
+    const success = await copyTableToClipboard(headers, rows);
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   const employeeFiles = {};
   employees.forEach(emp => {
@@ -375,7 +431,16 @@ export default function DetailTab({ sheetType, sheetName, employees, sheetData, 
 
         {hasDeadline && (
           <>
-            <div className="glass-card rounded-3xl p-5 flex items-center justify-between shadow-sm">
+            <div 
+              onClick={() => {
+                if (overdueCount > 0) {
+                  setModalType('overdue');
+                  setSearchTerm('');
+                  setModalOpen(true);
+                }
+              }}
+              className={`glass-card rounded-3xl p-5 flex items-center justify-between shadow-sm transition-all duration-200 ${overdueCount > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] border-red-200/50 hover:bg-red-50/10' : ''}`}
+            >
               <div>
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Đã quá hạn</span>
                 <h4 className={`text-3xl font-extrabold mt-1 ${overdueCount > 0 ? 'text-red-500' : 'text-slate-800'}`}>{overdueCount}</h4>
@@ -385,7 +450,16 @@ export default function DetailTab({ sheetType, sheetName, employees, sheetData, 
               </div>
             </div>
 
-            <div className="glass-card rounded-3xl p-5 flex items-center justify-between shadow-sm">
+            <div 
+              onClick={() => {
+                if (near1mCount > 0) {
+                  setModalType('1m');
+                  setSearchTerm('');
+                  setModalOpen(true);
+                }
+              }}
+              className={`glass-card rounded-3xl p-5 flex items-center justify-between shadow-sm transition-all duration-200 ${near1mCount > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] border-amber-200/50 hover:bg-amber-50/10' : ''}`}
+            >
               <div>
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Hạn dưới 1 tháng</span>
                 <h4 className={`text-3xl font-extrabold mt-1 ${near1mCount > 0 ? 'text-amber-500' : 'text-slate-800'}`}>{near1mCount}</h4>
@@ -395,7 +469,16 @@ export default function DetailTab({ sheetType, sheetName, employees, sheetData, 
               </div>
             </div>
 
-            <div className="glass-card rounded-3xl p-5 flex items-center justify-between shadow-sm">
+            <div 
+              onClick={() => {
+                if (near2mCount > 0) {
+                  setModalType('2m');
+                  setSearchTerm('');
+                  setModalOpen(true);
+                }
+              }}
+              className={`glass-card rounded-3xl p-5 flex items-center justify-between shadow-sm transition-all duration-200 ${near2mCount > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] border-yellow-200/50 hover:bg-yellow-50/10' : ''}`}
+            >
               <div>
                 <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Hạn 1 - 2 tháng</span>
                 <h4 className={`text-3xl font-extrabold mt-1 ${near2mCount > 0 ? 'text-yellow-600' : 'text-slate-800'}`}>{near2mCount}</h4>
@@ -480,6 +563,80 @@ export default function DetailTab({ sheetType, sheetName, employees, sheetData, 
           </div>
         )}
       </div>
+
+      {/* Modal for detailed lists when clicking stats cards */}
+      {modalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-4xl glass-card rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-scale-in">
+            
+            {/* Modal Header */}
+            <div className="p-6 bg-slate-50/50 border-b border-slate-100/50 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">{getModalTitle()}</h3>
+                <p className="text-xs text-slate-400 mt-1">Đã lọc danh sách hồ sơ chi tiết theo quyền của bạn.</p>
+              </div>
+              <button 
+                onClick={() => setModalOpen(false)}
+                className="p-1.5 text-slate-500 hover:text-slate-800 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="p-4 border-b border-slate-100/50 bg-white/40 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 flex-1">
+                <Search className="text-slate-400 shrink-0" size={20} />
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm sản phẩm, nhân viên, ghi chú..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 font-semibold"
+                />
+              </div>
+              <button
+                onClick={handleCopyModalTable}
+                className="px-4 py-2 bg-gradient-to-tr from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1.5 shrink-0"
+              >
+                {copied ? <Check size={14} /> : <Copy size={14} />}
+                {copied ? 'Đã sao chép!' : 'Sao chép bảng'}
+              </button>
+            </div>
+
+            {/* Modal Table Content */}
+            <div className="flex-1 overflow-y-auto p-6">
+              {filteredModalData.length === 0 ? (
+                <div className="text-center py-12 text-slate-400 font-semibold">
+                  Không tìm thấy hồ sơ nào khớp với điều kiện tìm kiếm.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-left text-sm">
+                    <thead>
+                      {renderHeaders()}
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredModalData.map((item, idx) => renderRow(item, idx))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-slate-50/50 border-t border-slate-100/50 flex justify-end">
+              <button
+                onClick={() => setModalOpen(false)}
+                className="px-6 py-2.5 bg-slate-800 text-white hover:bg-slate-700 font-bold rounded-2xl active:scale-[0.98] transition-all text-sm"
+              >
+                Đóng
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
