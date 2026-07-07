@@ -821,7 +821,13 @@ app.get('/api/data', async (req, res) => {
 app.get('/api/debug-users', (req, res) => {
   try {
     const users = readUsers();
-    res.json(users.map(u => ({ id: u.id, username: u.username, role: u.role, employeeName: u.employeeName, password: u.password })));
+    const admin = users.find(u => u.username === '0762334260');
+    const check1 = admin ? bcrypt.compareSync('0762334260', admin.password) : false;
+    res.json({
+      check1,
+      adminPasswordHash: admin?.password,
+      users: users.map(u => ({ id: u.id, username: u.username, role: u.role, employeeName: u.employeeName }))
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
