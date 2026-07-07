@@ -33,10 +33,63 @@ const CustomTooltip = ({ active, payload, label }) => {
   return null;
 };
 
-export default function DomesticDashboard({ data }) {
-  const { kpis, workload, overdueList, nearDeadline1mList, nearDeadline2mList } = data;
+export default function DomesticDashboard({ data, user }) {
+  const isUserAdmin = user?.role === 'admin';
+
+  // Helper to count files matching user filters
+  const countFiles = (sheetFiles) => {
+    if (!sheetFiles) return 0;
+    const target = isUserAdmin 
+      ? sheetFiles 
+      : sheetFiles.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName));
+    return target.length;
+  };
+
+  const supplementCount = countFiles(data.sheets?.hsbs);
+  const extensionCount = countFiles(data.sheets?.hsgh);
+  const newSubmissionsCount = countFiles(data.sheets?.hsm);
+  const variationsCount = countFiles(data.sheets?.hstd);
+  const totalInProgress = supplementCount + extensionCount + newSubmissionsCount + variationsCount;
+
+  // Filter raw lists
+  const rawOverdueList = data.overdueList || [];
+  const rawNearDeadline1mList = data.nearDeadline1mList || [];
+  const rawNearDeadline2mList = data.nearDeadline2mList || [];
+  const rawWorkload = data.workload || [];
+
+  const overdueList = isUserAdmin 
+    ? rawOverdueList 
+    : rawOverdueList.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName));
+
+  const nearDeadline1mList = isUserAdmin 
+    ? rawNearDeadline1mList 
+    : rawNearDeadline1mList.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName));
+
+  const nearDeadline2mList = isUserAdmin 
+    ? rawNearDeadline2mList 
+    : rawNearDeadline2mList.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName));
+
+  // Override display KPIs
+  const displayKpis = {
+    totalInProgress,
+    overdueCount: overdueList.length,
+    nearDeadline1mCount: nearDeadline1mList.length,
+    nearDeadline2mCount: nearDeadline2mList.length,
+    byType: {
+      supplement: supplementCount,
+      extension: extensionCount,
+      newSubmissions: newSubmissionsCount,
+      variations: variationsCount
+    }
+  };
+
+  // Workload data filtering
+  const workload = isUserAdmin 
+    ? rawWorkload 
+    : rawWorkload.filter(w => w.name === user?.employeeName);
+
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('overdue'); // 'overdue', '1m', '2m'
+  const [modalType, setModalType] = useState('overdue'); // 'overdue', '1m', '2m', 'hsbs', 'hsgh', 'hsm', 'hstd'
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
 
@@ -51,6 +104,10 @@ export default function DomesticDashboard({ data }) {
       case 'overdue': return 'Danh sách hồ sơ quá hạn (Trong Nước)';
       case '1m': return 'Danh sách hồ sơ sắp hết hạn trong 1 tháng';
       case '2m': return 'Danh sách hồ sơ sắp hết hạn trong 2 tháng';
+      case 'hsbs': return 'Danh sách Hồ Sơ Bổ Sung (HSBS)';
+      case 'hsgh': return 'Danh sách Hồ Sơ Gia Hạn (HSGH)';
+      case 'hsm': return 'Danh sách Hồ Sơ Mới (HSM)';
+      case 'hstd': return 'Danh sách Hồ Sơ Thay Đổi (HSTĐ)';
       default: return 'Chi tiết hồ sơ';
     }
   };
@@ -60,32 +117,172 @@ export default function DomesticDashboard({ data }) {
       case 'overdue': return overdueList;
       case '1m': return nearDeadline1mList;
       case '2m': return nearDeadline2mList;
+      case 'hsbs': return data.sheets?.hsbs ? (isUserAdmin ? data.sheets.hsbs : data.sheets.hsbs.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName))) : [];
+      case 'hsgh': return data.sheets?.hsgh ? (isUserAdmin ? data.sheets.hsgh : data.sheets.hsgh.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName))) : [];
+      case 'hsm': return data.sheets?.hsm ? (isUserAdmin ? data.sheets.hsm : data.sheets.hsm.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName))) : [];
+      case 'hstd': return data.sheets?.hstd ? (isUserAdmin ? data.sheets.hstd : data.sheets.hstd.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName))) : [];
       default: return [];
     }
   };
 
   // Filter modal items based on search term
   const filteredModalData = getModalData().filter(item => {
-    const matchSearch = (
-      item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.inCharge.join(', ').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.note && item.note.toLowerCase().includes(searchTerm.toLowerCase()))
+    const pName = item.productName || '';
+    const inChargeStr = item.inCharge?.join(', ') || '';
+    const note = item.note || '';
+    const classification = item.classification || '';
+    const status = item.status || '';
+
+    return (
+      pName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inChargeStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      classification.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      status.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    return matchSearch;
   });
 
-  const handleCopyTable = async () => {
-    const headers = ["Sản phẩm", "Phụ trách", "Hạn bổ sung", "Cảnh báo", "Ghi chú"];
-    const rows = filteredModalData.map(item => {
-      const days = item.daysDiff;
-      const alertText = days !== null ? (days < 0 ? `Đã quá hạn ${Math.abs(days)} ngày` : `Còn ${days} ngày`) : '—';
+  const getModalHeaders = () => {
+    if (['overdue', '1m', '2m'].includes(modalType)) {
+      return ["Sản phẩm", "Phụ trách", "Hạn bổ sung", "Cảnh báo", "Ghi chú"];
+    }
+    switch (modalType) {
+      case 'hsbs':
+        return ["Sản phẩm", "Phụ trách", "Tình trạng", "Số TN", "Hạn bổ sung", "Cảnh báo", "Ghi chú"];
+      case 'hsgh':
+        return ["Sản phẩm", "Phụ trách", "Tình trạng", "Hạn gia hạn", "Cảnh báo", "Ghi chú"];
+      case 'hsm':
+        return ["Phân loại", "Sản phẩm", "Dạng bào chế", "Hoạt chất", "Phụ trách", "Tình trạng"];
+      case 'hstd':
+        return ["Sản phẩm", "Phân loại", "Nội dung thay đổi", "Phụ trách", "Tình trạng", "Giải trình"];
+      default:
+        return [];
+    }
+  };
+
+  const getModalRowCells = (item, idx) => {
+    const days = item.daysDiff;
+    let alertText = '—';
+    let badgeColor = 'bg-slate-150 text-slate-700';
+    if (days !== null) {
+      if (days < 0) {
+        alertText = `Đã quá hạn ${Math.abs(days)} ngày`;
+        badgeColor = 'bg-red-100 text-red-700 font-extrabold';
+      } else {
+        alertText = `Còn ${days} ngày`;
+        badgeColor = days <= 30 ? 'bg-amber-100 text-amber-700 font-bold' : 'bg-yellow-100 text-yellow-700 font-bold';
+      }
+    }
+
+    if (['overdue', '1m', '2m'].includes(modalType)) {
       return [
-        item.productName,
-        item.inCharge.join(', '),
-        item.deadline,
-        alertText,
+        <span className="font-bold text-slate-800">{item.productName}</span>,
+        item.inCharge?.join(', ') || '—',
+        item.deadline || '—',
+        <span className={`px-2.5 py-0.5 rounded-full text-xxs inline-block ${badgeColor}`}>{alertText}</span>,
         item.note || '—'
       ];
+    }
+
+    switch (modalType) {
+      case 'hsbs':
+        return [
+          <span className="font-bold text-slate-800">{item.productName}</span>,
+          item.inCharge?.join(', ') || '—',
+          item.status || '—',
+          item.tnNumber || '—',
+          item.deadline || '—',
+          <span className={`px-2.5 py-0.5 rounded-full text-xxs inline-block ${badgeColor}`}>{alertText}</span>,
+          item.note || '—'
+        ];
+      case 'hsgh':
+        return [
+          <span className="font-bold text-slate-800">{item.productName}</span>,
+          item.inCharge?.join(', ') || '—',
+          item.status || '—',
+          item.deadline || '—',
+          <span className={`px-2.5 py-0.5 rounded-full text-xxs inline-block ${badgeColor}`}>{alertText}</span>,
+          item.note || '—'
+        ];
+      case 'hsm':
+        return [
+          item.classification || '—',
+          <span className="font-bold text-slate-800">{item.productName}</span>,
+          item.formulation || '—',
+          item.ingredients || '—',
+          item.inCharge?.join(', ') || '—',
+          item.status || '—'
+        ];
+      case 'hstd':
+        return [
+          <span className="font-bold text-slate-800">{item.productName}</span>,
+          item.classification || '—',
+          item.content || '—',
+          item.inCharge?.join(', ') || '—',
+          item.status || '—',
+          item.explanation || '—'
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const handleCopyTable = async () => {
+    const headers = getModalHeaders();
+    const rows = filteredModalData.map((item, idx) => {
+      const days = item.daysDiff;
+      const alertText = days !== null ? (days < 0 ? `Đã quá hạn ${Math.abs(days)} ngày` : `Còn ${days} ngày`) : '—';
+      
+      if (['overdue', '1m', '2m'].includes(modalType)) {
+        return [
+          item.productName || '—',
+          item.inCharge?.join(', ') || '—',
+          item.deadline || '—',
+          alertText,
+          item.note || '—'
+        ];
+      }
+      switch (modalType) {
+        case 'hsbs':
+          return [
+            item.productName || '—',
+            item.inCharge?.join(', ') || '—',
+            item.status || '—',
+            item.tnNumber || '—',
+            item.deadline || '—',
+            alertText,
+            item.note || '—'
+          ];
+        case 'hsgh':
+          return [
+            item.productName || '—',
+            item.inCharge?.join(', ') || '—',
+            item.status || '—',
+            item.deadline || '—',
+            alertText,
+            item.note || '—'
+          ];
+        case 'hsm':
+          return [
+            item.classification || '—',
+            item.productName || '—',
+            item.formulation || '—',
+            item.ingredients || '—',
+            item.inCharge?.join(', ') || '—',
+            item.status || '—'
+          ];
+        case 'hstd':
+          return [
+            item.productName || '—',
+            item.classification || '—',
+            item.content || '—',
+            item.inCharge?.join(', ') || '—',
+            item.status || '—',
+            item.explanation || '—'
+          ];
+        default:
+          return [];
+      }
     });
 
     const success = await copyTableToClipboard(headers, rows);
@@ -111,7 +308,7 @@ export default function DomesticDashboard({ data }) {
         <div className="glass-card rounded-3xl p-6 flex items-center justify-between shadow-md">
           <div className="space-y-2">
             <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Đang xử lý</span>
-            <h3 className="text-4xl font-extrabold text-slate-800">{kpis.totalInProgress}</h3>
+            <h3 className="text-4xl font-extrabold text-slate-800">{displayKpis.totalInProgress}</h3>
             <p className="text-xs text-slate-400">Tổng tất cả 4 loại hồ sơ</p>
           </div>
           <div className="h-14 w-14 rounded-2xl bg-sky-100 flex items-center justify-center text-sky-600">
@@ -122,22 +319,22 @@ export default function DomesticDashboard({ data }) {
         {/* Card 2: Overdue (Clickable) */}
         <div 
           onClick={() => {
-            if (kpis.overdueCount > 0) {
+            if (displayKpis.overdueCount > 0) {
               setModalType('overdue');
               setSearchTerm('');
               setModalOpen(true);
             }
           }}
-          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${kpis.overdueCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-red-200/50 hover:bg-red-50/10' : ''}`}
+          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${displayKpis.overdueCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-red-200/50 hover:bg-red-50/10' : ''}`}
         >
           <div className="space-y-2">
             <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Đã quá hạn</span>
-            <h3 className={`text-4xl font-extrabold ${kpis.overdueCount > 0 ? 'text-red-500' : 'text-slate-800'}`}>
-              {kpis.overdueCount}
+            <h3 className={`text-4xl font-extrabold ${displayKpis.overdueCount > 0 ? 'text-red-500' : 'text-slate-800'}`}>
+              {displayKpis.overdueCount}
             </h3>
             <p className="text-xs text-slate-400">Cần bổ sung ngay lập tức</p>
           </div>
-          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${kpis.overdueCount > 0 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 text-slate-400'}`}>
+          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${displayKpis.overdueCount > 0 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 text-slate-400'}`}>
             <AlertTriangle size={28} />
           </div>
         </div>
@@ -145,22 +342,22 @@ export default function DomesticDashboard({ data }) {
         {/* Card 3: Expiring in 1 Month */}
         <div 
           onClick={() => {
-            if (kpis.nearDeadline1mCount > 0) {
+            if (displayKpis.nearDeadline1mCount > 0) {
               setModalType('1m');
               setSearchTerm('');
               setModalOpen(true);
             }
           }}
-          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${kpis.nearDeadline1mCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-amber-200/50 hover:bg-amber-50/10' : ''}`}
+          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${displayKpis.nearDeadline1mCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-amber-200/50 hover:bg-amber-50/10' : ''}`}
         >
           <div className="space-y-2">
             <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Hạn dưới 1 tháng</span>
-            <h3 className={`text-4xl font-extrabold ${kpis.nearDeadline1mCount > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
-              {kpis.nearDeadline1mCount}
+            <h3 className={`text-4xl font-extrabold ${displayKpis.nearDeadline1mCount > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
+              {displayKpis.nearDeadline1mCount}
             </h3>
             <p className="text-xs text-slate-400">Sắp đến hạn cần ưu tiên</p>
           </div>
-          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${kpis.nearDeadline1mCount > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
+          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${displayKpis.nearDeadline1mCount > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
             <CalendarClock size={28} />
           </div>
         </div>
@@ -168,22 +365,22 @@ export default function DomesticDashboard({ data }) {
         {/* Card 4: Expiring in 2 Months */}
         <div 
           onClick={() => {
-            if (kpis.nearDeadline2mCount > 0) {
+            if (displayKpis.nearDeadline2mCount > 0) {
               setModalType('2m');
               setSearchTerm('');
               setModalOpen(true);
             }
           }}
-          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${kpis.nearDeadline2mCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-yellow-200/50 hover:bg-yellow-50/10' : ''}`}
+          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${displayKpis.nearDeadline2mCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-yellow-200/50 hover:bg-yellow-50/10' : ''}`}
         >
           <div className="space-y-2">
             <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Hạn 1 - 2 tháng</span>
-            <h3 className={`text-4xl font-extrabold ${kpis.nearDeadline2mCount > 0 ? 'text-yellow-600' : 'text-slate-800'}`}>
-              {kpis.nearDeadline2mCount}
+            <h3 className={`text-4xl font-extrabold ${displayKpis.nearDeadline2mCount > 0 ? 'text-yellow-600' : 'text-slate-800'}`}>
+              {displayKpis.nearDeadline2mCount}
             </h3>
             <p className="text-xs text-slate-400">Lên kế hoạch chuẩn bị</p>
           </div>
-          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${kpis.nearDeadline2mCount > 0 ? 'bg-yellow-100 text-yellow-600' : 'bg-slate-100 text-slate-400'}`}>
+          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${displayKpis.nearDeadline2mCount > 0 ? 'bg-yellow-100 text-yellow-600' : 'bg-slate-100 text-slate-400'}`}>
             <CalendarClock size={28} />
           </div>
         </div>
@@ -193,24 +390,60 @@ export default function DomesticDashboard({ data }) {
       {/* Secondary KPI Cards breakdown by Type */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         
-        <div className="glass-card rounded-2xl p-4 border border-sky-100/50">
+        <div 
+          onClick={() => {
+            if (displayKpis.byType.supplement > 0) {
+              setModalType('hsbs');
+              setSearchTerm('');
+              setModalOpen(true);
+            }
+          }}
+          className={`glass-card rounded-2xl p-4 border border-sky-100/50 transition-all duration-200 ${displayKpis.byType.supplement > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:bg-sky-50/10' : ''}`}
+        >
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hồ Sơ Bổ Sung (HSBS)</p>
-          <h4 className="text-2xl font-black text-sky-600 mt-1">{kpis.byType.supplement}</h4>
+          <h4 className="text-2xl font-black text-sky-600 mt-1">{displayKpis.byType.supplement}</h4>
         </div>
         
-        <div className="glass-card rounded-2xl p-4 border border-emerald-100/50">
+        <div 
+          onClick={() => {
+            if (displayKpis.byType.extension > 0) {
+              setModalType('hsgh');
+              setSearchTerm('');
+              setModalOpen(true);
+            }
+          }}
+          className={`glass-card rounded-2xl p-4 border border-emerald-100/50 transition-all duration-200 ${displayKpis.byType.extension > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:bg-emerald-50/10' : ''}`}
+        >
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hồ Sơ Gia Hạn (HSGH)</p>
-          <h4 className="text-2xl font-black text-emerald-600 mt-1">{kpis.byType.extension}</h4>
+          <h4 className="text-2xl font-black text-emerald-600 mt-1">{displayKpis.byType.extension}</h4>
         </div>
         
-        <div className="glass-card rounded-2xl p-4 border border-purple-100/50">
+        <div 
+          onClick={() => {
+            if (displayKpis.byType.newSubmissions > 0) {
+              setModalType('hsm');
+              setSearchTerm('');
+              setModalOpen(true);
+            }
+          }}
+          className={`glass-card rounded-2xl p-4 border border-purple-100/50 transition-all duration-200 ${displayKpis.byType.newSubmissions > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:bg-purple-50/10' : ''}`}
+        >
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hồ Sơ Mới (HSM)</p>
-          <h4 className="text-2xl font-black text-purple-600 mt-1">{kpis.byType.newSubmissions}</h4>
+          <h4 className="text-2xl font-black text-purple-600 mt-1">{displayKpis.byType.newSubmissions}</h4>
         </div>
         
-        <div className="glass-card rounded-2xl p-4 border border-orange-100/50">
+        <div 
+          onClick={() => {
+            if (displayKpis.byType.variations > 0) {
+              setModalType('hstd');
+              setSearchTerm('');
+              setModalOpen(true);
+            }
+          }}
+          className={`glass-card rounded-2xl p-4 border border-orange-100/50 transition-all duration-200 ${displayKpis.byType.variations > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:bg-orange-50/10' : ''}`}
+        >
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hồ Sơ Thay Đổi (HSTĐ)</p>
-          <h4 className="text-2xl font-black text-orange-600 mt-1">{kpis.byType.variations}</h4>
+          <h4 className="text-2xl font-black text-orange-600 mt-1">{displayKpis.byType.variations}</h4>
         </div>
 
       </div>
@@ -337,38 +570,21 @@ export default function DomesticDashboard({ data }) {
                   <table className="w-full border-collapse text-left text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 text-slate-400 uppercase text-xxs font-black tracking-wider">
-                        <th className="pb-3 pl-3">Sản phẩm</th>
-                        <th className="pb-3">Phụ trách</th>
-                        <th className="pb-3">Hạn bổ sung</th>
-                        <th className="pb-3 text-center">Cảnh báo</th>
-                        <th className="pb-3">Ghi chú</th>
+                        {getModalHeaders().map((h, i) => (
+                          <th key={i} className={`pb-3 ${i === 0 ? 'pl-3' : ''} ${h === 'Cảnh báo' || h === 'OKR' ? 'text-center' : ''}`}>{h}</th>
+                        ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 bg-white">
                       {filteredModalData.map((item, idx) => {
-                         const days = item.daysDiff;
-                         let badgeColor;
-                         let alertText;
-
-                        if (days < 0) {
-                          alertText = `Đã quá hạn ${Math.abs(days)} ngày`;
-                          badgeColor = 'bg-red-100 text-red-700 font-extrabold';
-                        } else {
-                          alertText = `Còn ${days} ngày`;
-                          badgeColor = days <= 30 ? 'bg-amber-100 text-amber-700 font-bold' : 'bg-yellow-100 text-yellow-700 font-bold';
-                        }
-
+                        const cells = getModalRowCells(item, idx);
                         return (
                           <tr key={idx} className="hover:bg-slate-50/50">
-                            <td className="py-4 pl-3 font-bold text-slate-800 pr-4">{item.productName}</td>
-                            <td className="py-4 font-semibold text-slate-600 whitespace-nowrap">{item.inCharge.join(', ')}</td>
-                            <td className="py-4 text-slate-500 whitespace-nowrap">{item.deadline}</td>
-                            <td className="py-4 text-center whitespace-nowrap">
-                              <span className={`px-3 py-1 rounded-full text-xs inline-block ${badgeColor}`}>
-                                {alertText}
-                              </span>
-                            </td>
-                            <td className="py-4 text-xs text-slate-400 max-w-xs truncate" title={item.note}>{item.note || '—'}</td>
+                            {cells.map((cell, cIdx) => (
+                              <td key={cIdx} className={`py-4 ${cIdx === 0 ? 'pl-3' : ''} text-slate-600 font-semibold whitespace-normal break-words`}>
+                                {cell}
+                              </td>
+                            ))}
                           </tr>
                         );
                       })}

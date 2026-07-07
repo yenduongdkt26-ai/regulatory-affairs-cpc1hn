@@ -52,12 +52,12 @@ function readUsers() {
   try {
     const defaultAdmin = [
       {
-        "id": "0999999999",
+        "id": "0762334260",
         "employeeName": "Dương Hải Yến",
-        "username": "0999999999",
-        "password": "$2a$10$/RcXRZpl7S1YVE.weINd9u913B3RWpb5hgAdoOdwuu2GCMsewYUOK",
+        "username": "0762334260",
+        "password": "0762334260", // Will be hashed on startup!
         "role": "admin",
-        "isFirstLogin": false
+        "isFirstLogin": true
       }
     ];
 
@@ -90,6 +90,17 @@ function writeUsers(users) {
 function hashPlainPasswords() {
   const users = readUsers();
   let modified = false;
+
+  // Migration for Admin phone change
+  const oldAdminIdx = users.findIndex(u => u.username === '0999999999');
+  if (oldAdminIdx !== -1) {
+    users[oldAdminIdx].id = '0762334260';
+    users[oldAdminIdx].username = '0762334260';
+    users[oldAdminIdx].password = '0762334260'; // will be hashed below
+    users[oldAdminIdx].isFirstLogin = true;
+    modified = true;
+  }
+
   users.forEach(user => {
     if (user.password && !user.password.startsWith('$2a$')) {
       user.password = bcrypt.hashSync(user.password, 10);
@@ -98,7 +109,7 @@ function hashPlainPasswords() {
   });
   if (modified) {
     writeUsers(users);
-    console.log("Passwords hashed successfully in database.json");
+    console.log("Passwords hashed successfully and admin migrated in database.json");
   }
 }
 

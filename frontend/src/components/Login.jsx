@@ -73,9 +73,9 @@ export default function Login({ onLoginSuccess }) {
       // Successfully changed password, proceed to login with same credentials
       // Save token and user settings
       const user = {
-        employeeName: tempUser?.employeeName || (username === '0999999999' ? 'Dương Hải Yến' : 'Nhân viên'),
+        employeeName: tempUser?.employeeName || (username === '0762334260' ? 'Dương Hải Yến' : 'Nhân viên'),
         username: tempUser?.username || username,
-        role: tempUser?.role || (username === '0999999999' ? 'admin' : 'user'),
+        role: tempUser?.role || (username === '0762334260' ? 'admin' : 'user'),
         isFirstLogin: false
       };
       

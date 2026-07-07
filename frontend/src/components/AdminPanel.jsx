@@ -22,6 +22,9 @@ export default function AdminPanel({ employees, token }) {
   const [fetching, setFetching] = useState(true);
   const [message, setMessage] = useState({ text: '', type: '' });
 
+  const [isCustomEmployee, setIsCustomEmployee] = useState(false);
+  const [customEmployeeName, setCustomEmployeeName] = useState('');
+
   // Fetch existing accounts
   const fetchAccounts = async () => {
     try {
@@ -54,8 +57,9 @@ export default function AdminPanel({ employees, token }) {
 
   const handleCreateAccount = async (e) => {
     e.preventDefault();
-    if (!selectedEmployee || !phone) {
-      setMessage({ text: 'Vui lòng chọn nhân viên và nhập số điện thoại', type: 'error' });
+    const empName = isCustomEmployee ? customEmployeeName : selectedEmployee;
+    if (!empName || !phone) {
+      setMessage({ text: 'Vui lòng chọn nhân viên hoặc nhập tên và nhập số điện thoại', type: 'error' });
       return;
     }
     
@@ -71,12 +75,13 @@ export default function AdminPanel({ employees, token }) {
     try {
       const res = await axios.post(
         `${API_BASE_URL}/api/auth/create-user`,
-        { employeeName: selectedEmployee, phone },
+        { employeeName: empName, phone },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
       setMessage({ text: res.data.message, type: 'success' });
       setSelectedEmployee('');
+      setCustomEmployeeName('');
       setPhone('');
       // Reload accounts list
       await fetchAccounts();
@@ -145,19 +150,45 @@ export default function AdminPanel({ employees, token }) {
 
           <form onSubmit={handleCreateAccount} className="space-y-5">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2 pl-1">Nhân viên chưa có tài khoản</label>
-              <select
-                value={selectedEmployee}
-                onChange={(e) => setSelectedEmployee(e.target.value)}
-                className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-indigo-400 focus:bg-white transition-all duration-200 text-sm font-semibold"
-              >
-                <option value="">-- Chọn nhân viên --</option>
-                {unassignedEmployees.map(emp => (
-                  <option key={emp.fullName} value={emp.fullName}>
-                    {emp.fullName}
-                  </option>
-                ))}
-              </select>
+              <div className="flex items-center gap-2 mb-2 pl-1">
+                <input
+                  type="checkbox"
+                  id="isCustomEmployee"
+                  checked={isCustomEmployee}
+                  onChange={(e) => {
+                    setIsCustomEmployee(e.target.checked);
+                    setSelectedEmployee('');
+                    setCustomEmployeeName('');
+                  }}
+                  className="h-4 w-4 text-indigo-600 border-slate-350 rounded focus:ring-indigo-400 cursor-pointer"
+                />
+                <label htmlFor="isCustomEmployee" className="text-xs font-bold text-slate-600 cursor-pointer">
+                  Thành viên ngoài danh sách (Nhập thủ công)
+                </label>
+              </div>
+
+              {isCustomEmployee ? (
+                <input
+                  type="text"
+                  placeholder="Nhập họ và tên thành viên..."
+                  value={customEmployeeName}
+                  onChange={(e) => setCustomEmployeeName(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-indigo-400 focus:bg-white transition-all duration-200 text-sm font-semibold"
+                />
+              ) : (
+                <select
+                  value={selectedEmployee}
+                  onChange={(e) => setSelectedEmployee(e.target.value)}
+                  className="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-indigo-400 focus:bg-white transition-all duration-200 text-sm font-semibold"
+                >
+                  <option value="">-- Chọn nhân viên --</option>
+                  {unassignedEmployees.map(emp => (
+                    <option key={emp.fullName} value={emp.fullName}>
+                      {emp.fullName}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <div>
@@ -178,7 +209,7 @@ export default function AdminPanel({ employees, token }) {
 
             <button
               type="submit"
-              disabled={loading || !selectedEmployee}
+              disabled={loading || (isCustomEmployee ? !customEmployeeName.trim() : !selectedEmployee)}
               className="w-full py-4 bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold rounded-2xl hover:from-indigo-600 hover:to-purple-600 active:scale-[0.98] transition-all duration-150 shadow-lg shadow-indigo-100 disabled:opacity-50 text-sm mt-2 flex items-center justify-center gap-2"
             >
               {loading ? (

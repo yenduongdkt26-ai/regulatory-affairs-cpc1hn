@@ -39,10 +39,74 @@ const CustomTooltip = ({ active, payload, label, chartMode }) => {
   return null;
 };
 
-export default function ExportDashboard({ data }) {
-  const { kpis, workload, grantedWorkload, overdueList, nearDeadline1mList, nearDeadline2mList } = data;
+export default function ExportDashboard({ data, user }) {
+  const isUserAdmin = user?.role === 'admin';
+
+  // Helper to count files matching user filters
+  const countFiles = (sheetFiles) => {
+    if (!sheetFiles) return 0;
+    const target = isUserAdmin 
+      ? sheetFiles 
+      : sheetFiles.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName));
+    return target.length;
+  };
+
+  const activeCount = countFiles(data.sheets?.hsxk);
+  const registrationLabelsCount = countFiles(data.sheets?.nhanDangKy);
+  const productionLabelsCount = countFiles(data.sheets?.nhanSanXuat);
+  const totalInProgress = activeCount + registrationLabelsCount + productionLabelsCount;
+
+  // Filter/count granted files
+  const hsxkCapFiles = data.sheets?.hsxkCap || [];
+  const filteredHsxkCap = isUserAdmin 
+    ? hsxkCapFiles 
+    : hsxkCapFiles.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName));
+  const totalGranted = filteredHsxkCap.length;
+
+  // Filter raw lists
+  const rawOverdueList = data.overdueList || [];
+  const rawNearDeadline1mList = data.nearDeadline1mList || [];
+  const rawNearDeadline2mList = data.nearDeadline2mList || [];
+  const rawWorkload = data.workload || [];
+  const rawGrantedWorkload = data.grantedWorkload || [];
+
+  const overdueList = isUserAdmin 
+    ? rawOverdueList 
+    : rawOverdueList.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName));
+
+  const nearDeadline1mList = isUserAdmin 
+    ? rawNearDeadline1mList 
+    : rawNearDeadline1mList.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName));
+
+  const nearDeadline2mList = isUserAdmin 
+    ? rawNearDeadline2mList 
+    : rawNearDeadline2mList.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName));
+
+  // Override display KPIs
+  const displayKpis = {
+    totalInProgress,
+    totalGranted,
+    overdueCount: overdueList.length,
+    nearDeadline1mCount: nearDeadline1mList.length,
+    nearDeadline2mCount: nearDeadline2mList.length,
+    byType: {
+      active: activeCount,
+      registrationLabels: registrationLabelsCount,
+      productionLabels: productionLabelsCount
+    }
+  };
+
+  // Workload data filtering
+  const workload = isUserAdmin 
+    ? rawWorkload 
+    : rawWorkload.filter(w => w.name === user?.employeeName);
+
+  const grantedWorkload = isUserAdmin 
+    ? rawGrantedWorkload 
+    : rawGrantedWorkload.filter(w => w.name === user?.employeeName);
+
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('overdue');
+  const [modalType, setModalType] = useState('overdue'); // 'overdue', '1m', '2m', 'hsxk', 'ndk', 'nsx'
   const [searchTerm, setSearchTerm] = useState('');
   const [chartMode, setChartMode] = useState('active'); // 'active', 'granted'
   const [copied, setCopied] = useState(false);
@@ -60,6 +124,9 @@ export default function ExportDashboard({ data }) {
       case 'overdue': return 'Danh sách hồ sơ quá hạn (Xuất Khẩu)';
       case '1m': return 'Danh sách hồ sơ sắp hết hạn trong 1 tháng (Xuất Khẩu)';
       case '2m': return 'Danh sách hồ sơ sắp hết hạn trong 2 tháng (Xuất Khẩu)';
+      case 'hsxk': return 'Danh sách Hồ sơ XK Đang làm';
+      case 'ndk': return 'Danh sách Nhãn Đăng Ký (NDK)';
+      case 'nsx': return 'Danh sách Nhãn Sản Xuất (NSX)';
       default: return 'Chi tiết hồ sơ';
     }
   };
@@ -69,33 +136,72 @@ export default function ExportDashboard({ data }) {
       case 'overdue': return overdueList;
       case '1m': return nearDeadline1mList;
       case '2m': return nearDeadline2mList;
+      case 'hsxk': return data.sheets?.hsxk ? (isUserAdmin ? data.sheets.hsxk : data.sheets.hsxk.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName))) : [];
+      case 'ndk': return data.sheets?.nhanDangKy ? (isUserAdmin ? data.sheets.nhanDangKy : data.sheets.nhanDangKy.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName))) : [];
+      case 'nsx': return data.sheets?.nhanSanXuat ? (isUserAdmin ? data.sheets.nhanSanXuat : data.sheets.nhanSanXuat.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName))) : [];
       default: return [];
     }
   };
 
   const filteredModalData = getModalData().filter(item => {
+    const pName = item.productName || '';
+    const expName = item.exportName || '';
+    const inChargeStr = item.inCharge?.join(', ') || '';
+    const country = item.country || '';
+    const classification = item.classification || '';
+
     return (
-      item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.exportName && item.exportName.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      item.inCharge.join(', ').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.country && item.country.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (item.classification && item.classification.toLowerCase().includes(searchTerm.toLowerCase()))
+      pName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      expName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      inChargeStr.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      country.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      classification.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
 
+  const getModalHeaders = () => {
+    return ["STT", "Sản phẩm", "Tên Xuất Khẩu", "Quốc gia", "Hạn nộp", "Cảnh báo", "Phân loại", "Ghi chú"];
+  };
+
+  const getModalRowCells = (item, idx) => {
+    const days = item.daysDiff;
+    let alertText = '—';
+    let badgeColor = 'bg-slate-150 text-slate-700';
+    if (days !== null) {
+      if (days < 0) {
+        alertText = `Đã quá hạn ${Math.abs(days)} ngày`;
+        badgeColor = 'bg-red-100 text-red-700 font-extrabold';
+      } else {
+        alertText = `Còn ${days} ngày`;
+        badgeColor = days <= 30 ? 'bg-amber-100 text-amber-700 font-bold' : 'bg-yellow-100 text-yellow-700 font-bold';
+      }
+    }
+    return [
+      item.stt || idx + 1,
+      <span className="font-bold text-slate-800">{item.productName}</span>,
+      item.exportName || '—',
+      item.country || '—',
+      item.deadline || '—',
+      <span className={`px-2.5 py-0.5 rounded-full text-xxs inline-block ${badgeColor}`}>{alertText}</span>,
+      item.classification || '—',
+      item.note || '—'
+    ];
+  };
+
   const handleCopyTable = async () => {
-    const headers = ["Sản phẩm", "Tên xuất khẩu", "Nước", "Phụ trách", "Deadline", "Cảnh báo", "Phân loại"];
-    const rows = filteredModalData.map(item => {
+    const headers = getModalHeaders();
+    const rows = filteredModalData.map((item, idx) => {
       const days = item.daysDiff;
       const alertText = days !== null ? (days < 0 ? `Đã quá hạn ${Math.abs(days)} ngày` : `Còn ${days} ngày`) : '—';
       return [
-        item.productName,
+        item.stt || idx + 1,
+        item.productName || '—',
         item.exportName || '—',
         item.country || '—',
-        item.inCharge.join(', '),
         item.deadline || '—',
         alertText,
-        item.classification || '—'
+        item.classification || '—',
+        item.note || '—'
       ];
     });
 
@@ -122,7 +228,7 @@ export default function ExportDashboard({ data }) {
         <div className="glass-card rounded-3xl p-6 flex items-center justify-between shadow-md">
           <div className="space-y-2">
             <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Đang xử lý</span>
-            <h3 className="text-4xl font-extrabold text-slate-800">{kpis.totalInProgress}</h3>
+            <h3 className="text-4xl font-extrabold text-slate-800">{displayKpis.totalInProgress}</h3>
             <p className="text-xs text-slate-400">HSXK + Nhãn ĐK + Nhãn SX</p>
           </div>
           <div className="h-14 w-14 rounded-2xl bg-sky-100 flex items-center justify-center text-sky-600">
@@ -134,7 +240,7 @@ export default function ExportDashboard({ data }) {
         <div className="glass-card rounded-3xl p-6 flex items-center justify-between shadow-md border-emerald-100">
           <div className="space-y-2">
             <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Đã được cấp năm nay</span>
-            <h3 className="text-4xl font-extrabold text-emerald-600">{kpis.totalGranted}</h3>
+            <h3 className="text-4xl font-extrabold text-emerald-600">{displayKpis.totalGranted}</h3>
             <p className="text-xs text-slate-400">Tổng số hồ sơ xuất khẩu cấp</p>
           </div>
           <div className="h-14 w-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600">
@@ -145,22 +251,22 @@ export default function ExportDashboard({ data }) {
         {/* Card 3: Overdue */}
         <div 
           onClick={() => {
-            if (kpis.overdueCount > 0) {
+            if (displayKpis.overdueCount > 0) {
               setModalType('overdue');
               setSearchTerm('');
               setModalOpen(true);
             }
           }}
-          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${kpis.overdueCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-red-200/50 hover:bg-red-50/10' : ''}`}
+          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${displayKpis.overdueCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-red-200/50 hover:bg-red-50/10' : ''}`}
         >
           <div className="space-y-2">
             <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Đã quá hạn</span>
-            <h3 className={`text-4xl font-extrabold ${kpis.overdueCount > 0 ? 'text-red-500' : 'text-slate-800'}`}>
-              {kpis.overdueCount}
+            <h3 className={`text-4xl font-extrabold ${displayKpis.overdueCount > 0 ? 'text-red-500' : 'text-slate-800'}`}>
+              {displayKpis.overdueCount}
             </h3>
             <p className="text-xs text-slate-400">Hồ sơ trễ hạn xuất khẩu</p>
           </div>
-          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${kpis.overdueCount > 0 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 text-slate-400'}`}>
+          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${displayKpis.overdueCount > 0 ? 'bg-red-100 text-red-600 animate-pulse' : 'bg-slate-100 text-slate-400'}`}>
             <AlertTriangle size={28} />
           </div>
         </div>
@@ -168,22 +274,22 @@ export default function ExportDashboard({ data }) {
         {/* Card 4: Expiring under 1 Month */}
         <div 
           onClick={() => {
-            if (kpis.nearDeadline1mCount > 0) {
+            if (displayKpis.nearDeadline1mCount > 0) {
               setModalType('1m');
               setSearchTerm('');
               setModalOpen(true);
             }
           }}
-          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${kpis.nearDeadline1mCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-amber-200/50 hover:bg-amber-50/10' : ''}`}
+          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${displayKpis.nearDeadline1mCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-amber-200/50 hover:bg-amber-50/10' : ''}`}
         >
           <div className="space-y-2">
             <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Hạn dưới 1 tháng</span>
-            <h3 className={`text-4xl font-extrabold ${kpis.nearDeadline1mCount > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
-              {kpis.nearDeadline1mCount}
+            <h3 className={`text-4xl font-extrabold ${displayKpis.nearDeadline1mCount > 0 ? 'text-amber-600' : 'text-slate-800'}`}>
+              {displayKpis.nearDeadline1mCount}
             </h3>
             <p className="text-xs text-slate-400">Sắp hết hạn cần xử lý</p>
           </div>
-          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${kpis.nearDeadline1mCount > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
+          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${displayKpis.nearDeadline1mCount > 0 ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-400'}`}>
             <CalendarClock size={28} />
           </div>
         </div>
@@ -191,22 +297,22 @@ export default function ExportDashboard({ data }) {
         {/* Card 5: Expiring in 2 Months */}
         <div 
           onClick={() => {
-            if (kpis.nearDeadline2mCount > 0) {
+            if (displayKpis.nearDeadline2mCount > 0) {
               setModalType('2m');
               setSearchTerm('');
               setModalOpen(true);
             }
           }}
-          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${kpis.nearDeadline2mCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-yellow-200/50 hover:bg-yellow-50/10' : ''}`}
+          className={`glass-card rounded-3xl p-6 flex items-center justify-between shadow-md transition-all duration-200 ${displayKpis.nearDeadline2mCount > 0 ? 'cursor-pointer hover:shadow-lg hover:scale-[1.02] border-yellow-200/50 hover:bg-yellow-50/10' : ''}`}
         >
           <div className="space-y-2">
             <span className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Hạn 1 - 2 tháng</span>
-            <h3 className={`text-4xl font-extrabold ${kpis.nearDeadline2mCount > 0 ? 'text-yellow-600' : 'text-slate-800'}`}>
-              {kpis.nearDeadline2mCount}
+            <h3 className={`text-4xl font-extrabold ${displayKpis.nearDeadline2mCount > 0 ? 'text-yellow-600' : 'text-slate-800'}`}>
+              {displayKpis.nearDeadline2mCount}
             </h3>
             <p className="text-xs text-slate-400">Hồ sơ cận kề deadline</p>
           </div>
-          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${kpis.nearDeadline2mCount > 0 ? 'bg-yellow-100 text-yellow-600' : 'bg-slate-100 text-slate-400'}`}>
+          <div className={`h-14 w-14 rounded-2xl flex items-center justify-center ${displayKpis.nearDeadline2mCount > 0 ? 'bg-yellow-100 text-yellow-600' : 'bg-slate-100 text-slate-400'}`}>
             <CalendarClock size={28} />
           </div>
         </div>
@@ -216,19 +322,46 @@ export default function ExportDashboard({ data }) {
       {/* Secondary KPI Cards breakdown by Type */}
       <div className="grid grid-cols-3 gap-6">
         
-        <div className="glass-card rounded-2xl p-4 border border-sky-100/50">
+        <div 
+          onClick={() => {
+            if (displayKpis.byType.active > 0) {
+              setModalType('hsxk');
+              setSearchTerm('');
+              setModalOpen(true);
+            }
+          }}
+          className={`glass-card rounded-2xl p-4 border border-sky-100/50 transition-all duration-200 ${displayKpis.byType.active > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:bg-sky-50/10' : ''}`}
+        >
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hồ sơ XK Đang làm</p>
-          <h4 className="text-2xl font-black text-sky-600 mt-1">{kpis.byType.active}</h4>
+          <h4 className="text-2xl font-black text-sky-600 mt-1">{displayKpis.byType.active}</h4>
         </div>
         
-        <div className="glass-card rounded-2xl p-4 border border-purple-100/50">
+        <div 
+          onClick={() => {
+            if (displayKpis.byType.registrationLabels > 0) {
+              setModalType('ndk');
+              setSearchTerm('');
+              setModalOpen(true);
+            }
+          }}
+          className={`glass-card rounded-2xl p-4 border border-purple-100/50 transition-all duration-200 ${displayKpis.byType.registrationLabels > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:bg-purple-50/10' : ''}`}
+        >
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nhãn Đăng Ký (NDK)</p>
-          <h4 className="text-2xl font-black text-purple-600 mt-1">{kpis.byType.registrationLabels}</h4>
+          <h4 className="text-2xl font-black text-purple-600 mt-1">{displayKpis.byType.registrationLabels}</h4>
         </div>
         
-        <div className="glass-card rounded-2xl p-4 border border-orange-100/50">
+        <div 
+          onClick={() => {
+            if (displayKpis.byType.productionLabels > 0) {
+              setModalType('nsx');
+              setSearchTerm('');
+              setModalOpen(true);
+            }
+          }}
+          className={`glass-card rounded-2xl p-4 border border-orange-100/50 transition-all duration-200 ${displayKpis.byType.productionLabels > 0 ? 'cursor-pointer hover:shadow-md hover:scale-[1.02] hover:bg-orange-50/10' : ''}`}
+        >
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nhãn Sản Xuất (NSX)</p>
-          <h4 className="text-2xl font-black text-orange-600 mt-1">{kpis.byType.productionLabels}</h4>
+          <h4 className="text-2xl font-black text-orange-600 mt-1">{displayKpis.byType.productionLabels}</h4>
         </div>
 
       </div>
@@ -524,43 +657,21 @@ export default function ExportDashboard({ data }) {
                   <table className="w-full border-collapse text-left text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 text-slate-400 uppercase text-xxs font-black tracking-wider">
-                        <th className="pb-3 pl-3">Sản phẩm</th>
-                        <th className="pb-3">Nước</th>
-                        <th className="pb-3">Phụ trách</th>
-                        <th className="pb-3">Deadline</th>
-                        <th className="pb-3 text-center">Cảnh báo</th>
-                        <th className="pb-3">Phân loại</th>
+                        {getModalHeaders().map((h, i) => (
+                          <th key={i} className={`pb-3 ${i === 0 ? 'pl-3' : ''} ${h === 'Cảnh báo' || h === 'OKR' ? 'text-center' : ''}`}>{h}</th>
+                        ))}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 bg-white">
                       {filteredModalData.map((item, idx) => {
-                        const days = item.daysDiff;
-                        let badgeColor;
-                        let alertText;
-
-                        if (days < 0) {
-                          alertText = `Đã quá hạn ${Math.abs(days)} ngày`;
-                          badgeColor = 'bg-red-100 text-red-700 font-extrabold';
-                        } else {
-                          alertText = `Còn ${days} ngày`;
-                          badgeColor = days <= 30 ? 'bg-amber-100 text-amber-700 font-bold' : 'bg-yellow-100 text-yellow-700 font-bold';
-                        }
-
+                        const cells = getModalRowCells(item, idx);
                         return (
                           <tr key={idx} className="hover:bg-slate-50/50">
-                            <td className="py-4 pl-3 pr-4">
-                              <div className="font-bold text-slate-800">{item.productName}</div>
-                              {item.exportName && <div className="text-xs text-slate-400 font-medium">{item.exportName}</div>}
-                            </td>
-                            <td className="py-4 font-semibold text-slate-700">{item.country || '—'}</td>
-                            <td className="py-4 font-semibold text-slate-600 whitespace-nowrap">{item.inCharge.join(', ')}</td>
-                            <td className="py-4 text-slate-500 whitespace-nowrap">{item.deadline}</td>
-                            <td className="py-4 text-center whitespace-nowrap">
-                              <span className={`px-3 py-1 rounded-full text-xs inline-block ${badgeColor}`}>
-                                {alertText}
-                              </span>
-                            </td>
-                            <td className="py-4 text-xs font-semibold text-slate-500">{item.classification || '—'}</td>
+                            {cells.map((cell, cIdx) => (
+                              <td key={cIdx} className={`py-4 ${cIdx === 0 ? 'pl-3' : ''} text-slate-600 font-semibold whitespace-normal break-words`}>
+                                {cell}
+                              </td>
+                            ))}
                           </tr>
                         );
                       })}

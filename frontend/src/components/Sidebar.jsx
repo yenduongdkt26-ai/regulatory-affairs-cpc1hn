@@ -51,18 +51,6 @@ export default function Sidebar({
       category: 'Xếp hạng'
     },
     {
-      id: 'sheet-legal',
-      label: 'Kho Văn Bản',
-      icon: <BookOpen size={22} />,
-      category: 'Trợ lý quy chế'
-    },
-    {
-      id: 'sheet-chatbot',
-      label: 'Chatbot Đăng Ký',
-      icon: <MessageSquare size={22} />,
-      category: 'Trợ lý quy chế'
-    },
-    {
       id: 'sheet-hsxk',
       label: 'Hồ Sơ Xuất Khẩu',
       icon: <FileSpreadsheet size={20} />,
@@ -106,7 +94,7 @@ export default function Sidebar({
     }
   ];
 
-  const categories = ['Tổng quan', 'Xếp hạng', 'Trợ lý quy chế', 'Chi tiết xuất khẩu', 'Chi tiết trong nước'];
+  const categories = ['Tổng quan', 'Xếp hạng', 'Chi tiết xuất khẩu', 'Chi tiết trong nước'];
 
   return (
     <>

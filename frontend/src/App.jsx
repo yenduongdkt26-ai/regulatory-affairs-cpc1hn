@@ -76,6 +76,54 @@ export default function App() {
     };
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Force Login on first daily visit
+  useEffect(() => {
+    const todayStr = new Date().toLocaleDateString('vi-VN');
+    const lastVisitDate = localStorage.getItem('last_visit_date');
+    const currentToken = localStorage.getItem('token');
+    
+    if (currentToken && lastVisitDate !== todayStr) {
+      console.log("First visit of the day, forcing login...");
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setToken('');
+      setUser(null);
+      setData(null);
+    }
+    localStorage.setItem('last_visit_date', todayStr);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-logout after 20 minutes of inactivity
+  useEffect(() => {
+    if (!token) return;
+
+    let timeoutId;
+
+    const resetTimer = () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      // 20 minutes = 20 * 60 * 1000 = 1200000 ms
+      timeoutId = setTimeout(() => {
+        console.log("Inactivity limit reached (20 mins), logging out...");
+        alert("Phiên làm việc của bạn đã hết hạn do không có hoạt động trong 20 phút. Vui lòng đăng nhập lại.");
+        handleLogout();
+      }, 20 * 60 * 1000);
+    };
+
+    const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      window.addEventListener(event, resetTimer);
+    });
+
+    resetTimer();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      events.forEach(event => {
+        window.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Set up 1-minute auto-refresh interval
   useEffect(() => {
     if (!token) return;
@@ -186,9 +234,9 @@ export default function App() {
 
     switch (currentTab) {
       case 'domestic-dashboard':
-        return <DomesticDashboard data={data.domestic} />;
+        return <DomesticDashboard data={data.domestic} user={user} />;
       case 'export-dashboard':
-        return <ExportDashboard data={data.export} />;
+        return <ExportDashboard data={data.export} user={user} />;
       case 'rankings':
         return <RankingsSection data={data} />;
       case 'sheet-hsxk':
@@ -205,17 +253,13 @@ export default function App() {
         return <DetailTab sheetType="hsm" sheetName="HSM" employees={data.employees} sheetData={data.domestic.sheets.hsm} user={user} />;
       case 'sheet-hstd':
         return <DetailTab sheetType="hstd" sheetName="HSTĐ" employees={data.employees} sheetData={data.domestic.sheets.hstd} user={user} />;
-      case 'sheet-legal':
-        return <LegalLibrary />;
-      case 'sheet-chatbot':
-        return <RegulatoryChatbot />;
       case 'kpi-monthly':
         return <MonthlyKPIs />;
       case 'admin-panel':
         if (user.role !== 'admin') return <div className="p-8 text-center text-red-500 font-bold">Không có quyền truy cập</div>;
         return <AdminPanel employees={data.employees} token={token} />;
       default:
-        return <DomesticDashboard data={data.domestic} />;
+        return <DomesticDashboard data={data.domestic} user={user} />;
     }
   };
 
@@ -295,7 +339,6 @@ export default function App() {
         </main>
 
       </div>
-      <ChatAssistantWidget />
     </div>
   );
 }
