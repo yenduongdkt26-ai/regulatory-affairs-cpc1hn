@@ -82,6 +82,32 @@ export default function ExportDashboard({ data, user }) {
     ? rawNearDeadline2mList 
     : rawNearDeadline2mList.filter(item => item.inCharge && item.inCharge.includes(user?.employeeName));
 
+  // Group filteredHsxkCap by country for charts
+  const countryCounts = {};
+  filteredHsxkCap.forEach(item => {
+    const c = item.country || "Không xác định";
+    countryCounts[c] = (countryCounts[c] || 0) + 1;
+  });
+  const grantedByCountry = Object.entries(countryCounts)
+    .map(([country, count]) => ({ country, count }))
+    .sort((a, b) => b.count - a.count);
+
+  // Group filteredHsxkCap by classification for charts
+  const classCounts = {};
+  filteredHsxkCap.forEach(item => {
+    let cls = item.classification || "Chưa phân loại";
+    const norm = cls.toLowerCase();
+    if (norm === 'mp') cls = 'Mỹ phẩm';
+    else if (norm === 'tpcn') cls = 'Thực phẩm chức năng';
+    else if (norm === 'ttb') cls = 'Trang thiết bị';
+    else if (norm === 'thuốc' || norm === 'thuoc') cls = 'Thuốc';
+    
+    classCounts[cls] = (classCounts[cls] || 0) + 1;
+  });
+  const grantedByClassification = Object.entries(classCounts)
+    .map(([name, value]) => ({ name, value }))
+    .sort((a, b) => b.value - a.value);
+
   // Override display KPIs
   const displayKpis = {
     totalInProgress,
@@ -93,7 +119,9 @@ export default function ExportDashboard({ data, user }) {
       active: activeCount,
       registrationLabels: registrationLabelsCount,
       productionLabels: productionLabelsCount
-    }
+    },
+    grantedByCountry,
+    grantedByClassification
   };
 
   // Workload data filtering
@@ -552,7 +580,7 @@ export default function ExportDashboard({ data, user }) {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 layout="vertical"
-                data={kpis.grantedByCountry ? kpis.grantedByCountry.slice(0, 7) : []}
+                data={displayKpis.grantedByCountry ? displayKpis.grantedByCountry.slice(0, 7) : []}
                 margin={{ top: 10, right: 30, left: 20, bottom: 10 }}
               >
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(148, 163, 184, 0.15)" />
@@ -560,7 +588,7 @@ export default function ExportDashboard({ data, user }) {
                 <YAxis dataKey="country" type="category" tick={{ fill: '#64748b', fontSize: 11, fontWeight: 500 }} axisLine={false} tickLine={false} width={80} />
                 <Tooltip cursor={{ fill: 'rgba(148, 163, 184, 0.05)' }} />
                 <Bar dataKey="count" fill="#0ea5e9" radius={[0, 6, 6, 0]} maxBarSize={25}>
-                  {(kpis.grantedByCountry || []).slice(0, 7).map((entry, index) => (
+                  {(displayKpis.grantedByCountry || []).slice(0, 7).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Bar>
@@ -578,7 +606,7 @@ export default function ExportDashboard({ data, user }) {
           <div className="h-80 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={kpis.grantedByClassification || []}
+                data={displayKpis.grantedByClassification || []}
                 margin={{ top: 10, right: 10, left: -20, bottom: 30 }}
               >
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.15)" />
@@ -595,7 +623,7 @@ export default function ExportDashboard({ data, user }) {
                 <YAxis tick={{ fill: '#64748b', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip cursor={{ fill: 'rgba(148, 163, 184, 0.05)' }} />
                 <Bar dataKey="value" fill="#ec4899" radius={[6, 6, 0, 0]} maxBarSize={35}>
-                  {(kpis.grantedByClassification || []).map((entry, index) => (
+                  {(displayKpis.grantedByClassification || []).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[(index + 3) % COLORS.length]} />
                   ))}
                 </Bar>
