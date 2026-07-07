@@ -95,11 +95,11 @@ function hashPlainPasswords() {
   const adminIdx = users.findIndex(u => u.username === '0762334260' || u.username === '0999999999');
   if (adminIdx !== -1) {
     const adminUser = users[adminIdx];
-    const resetFile = path.join(DATA_DIR, '.admin_reset_v2');
+    const resetFile = path.join(DATA_DIR, '.admin_reset_v3');
     if (!fs.existsSync(resetFile)) {
       adminUser.id = '0762334260';
       adminUser.username = '0762334260';
-      adminUser.password = '0762334260'; // will be hashed below
+      adminUser.password = bcrypt.hashSync('0762334260', 10); // Hash directly
       adminUser.isFirstLogin = true;
       try {
         fs.writeFileSync(resetFile, 'done');
