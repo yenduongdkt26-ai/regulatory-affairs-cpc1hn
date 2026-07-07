@@ -330,6 +330,7 @@ export default function MonthlyKPIs() {
       setSuccess(res.data.message);
       setIsPlanModalOpen(false);
       fetchRecords();
+      window.dispatchEvent(new CustomEvent('task-completed'));
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || 'Đăng ký kế hoạch KPI thất bại.');
@@ -365,6 +366,7 @@ export default function MonthlyKPIs() {
       setSuccess(res.data.message);
       setIsReportModalOpen(false);
       fetchRecords();
+      window.dispatchEvent(new CustomEvent('task-completed'));
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || 'Nộp báo cáo KPI thất bại.');
@@ -392,6 +394,7 @@ export default function MonthlyKPIs() {
       setSuccess(res.data.message);
       setApprovalComment('');
       fetchRecords();
+      window.dispatchEvent(new CustomEvent('task-completed'));
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || 'Phê duyệt kế hoạch thất bại.');
@@ -418,6 +421,7 @@ export default function MonthlyKPIs() {
       setSuccess(res.data.message);
       setApprovalComment('');
       fetchRecords();
+      window.dispatchEvent(new CustomEvent('task-completed'));
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || 'Phê duyệt báo cáo thất bại.');

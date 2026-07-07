@@ -1,0 +1,19 @@
+/* Cat Mascot Layout Anchor Styles */
+
+.cat-desktop-pet-anchor {
+  position: fixed;
+  bottom: 0px;
+  width: 96px;
+  height: 96px;
+  z-index: 9999;
+  pointer-events: none; /* Make container click-through */
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* Enable pointer events only for the interactive parts */
+.cat-desktop-pet-anchor .cat-container,
+.cat-desktop-pet-anchor .speech-bubble-wrapper {
+  pointer-events: auto; /* Allow clicking on the cat and its sound toggle */
+}

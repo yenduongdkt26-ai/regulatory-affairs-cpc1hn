@@ -13,6 +13,7 @@ import ChatAssistantWidget from './components/ChatAssistantWidget';
 import LegalLibrary from './components/LegalLibrary';
 import RegulatoryChatbot from './components/RegulatoryChatbot';
 import MonthlyKPIs from './components/MonthlyKPIs';
+import CatMascot from './components/CatMascot';
 import { Menu, RefreshCw, Clock, AlertTriangle, CalendarClock } from 'lucide-react';
 
 export default function App() {
@@ -339,6 +340,7 @@ export default function App() {
         </main>
 
       </div>
+      <CatMascot />
     </div>
   );
 }

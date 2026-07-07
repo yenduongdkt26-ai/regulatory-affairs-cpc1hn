@@ -1,0 +1,366 @@
+/* Cat Mascot Animation Engine Stylesheet */
+
+.cat-container {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  pointer-events: auto;
+}
+
+/* Horizontal flip (for walking right -> left) */
+.flip-horizontal {
+  transform: scaleX(-1);
+}
+
+.cat-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 4px 6px rgba(100, 116, 139, 0.08));
+}
+
+/* --- Base Body Parts --- */
+.cat-body-group {
+  transform-origin: 100px 140px;
+}
+
+.cat-head-group {
+  transform-origin: 100px 95px;
+  animation: head-idle 6s ease-in-out infinite alternate;
+}
+
+.cat-tail {
+  transform-origin: 45px 135px;
+  animation: tail-wag 3s ease-in-out infinite alternate;
+}
+
+.cat-paw-left {
+  transform-origin: 85px 145px;
+}
+
+.cat-paw-right {
+  transform-origin: 115px 145px;
+}
+
+/* --- Shadow animations --- */
+.cat-shadow {
+  position: absolute;
+  bottom: 0px;
+  left: 18px;
+  width: 60px;
+  height: 6px;
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 50%;
+  z-index: -1;
+  animation: shadow-breath 3s ease-in-out infinite alternate;
+}
+
+.cat-shadow-sleep {
+  position: absolute;
+  bottom: 4px;
+  left: 12px;
+  width: 72px;
+  height: 6px;
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 50%;
+  z-index: -1;
+  animation: shadow-breath 4s ease-in-out infinite alternate;
+}
+
+/* --- Animation States --- */
+
+/* 1. Walking State (Walking In / Out / Carrying) */
+.state-walking-in .cat-body-group,
+.state-walking-out .cat-body-group,
+.state-carrying-coffee .cat-body-group,
+.state-carrying-gift .cat-body-group {
+  animation: walk-bob 0.5s ease-in-out infinite alternate;
+}
+
+.state-walking-in .cat-paw-left,
+.state-walking-out .cat-paw-left,
+.state-carrying-coffee .cat-paw-left,
+.state-carrying-gift .cat-paw-left {
+  animation: leg-walk-left 0.5s ease-in-out infinite alternate;
+}
+
+.state-walking-in .cat-paw-right,
+.state-walking-out .cat-paw-right,
+.state-carrying-coffee .cat-paw-right,
+.state-carrying-gift .cat-paw-right {
+  animation: leg-walk-right 0.5s ease-in-out infinite alternate;
+}
+
+.state-walking-in .cat-tail,
+.state-walking-out .cat-tail,
+.state-carrying-coffee .cat-tail,
+.state-carrying-gift .cat-tail {
+  animation: tail-walk 0.5s ease-in-out infinite alternate;
+}
+
+/* 2. Sitting / Idle / Talking State */
+.state-idle .cat-torso,
+.state-talking .cat-torso {
+  animation: body-breath 3s ease-in-out infinite alternate;
+}
+
+.state-idle .cat-head-group,
+.state-talking .cat-head-group {
+  animation: head-blink-look 7s ease-in-out infinite;
+}
+
+/* 3. Grooming State */
+.state-grooming .cat-head-group {
+  animation: head-groom 1.5s ease-in-out infinite alternate;
+}
+
+.cat-grooming-paw {
+  transform-origin: 75px 120px;
+  animation: paw-lick 1.5s ease-in-out infinite alternate;
+}
+
+/* 4. Sleeping State */
+.state-sleeping .cat-body-group {
+  animation: body-breath-sleep 4s ease-in-out infinite alternate;
+  transform: translateY(4px);
+}
+
+.state-sleeping .cat-tail {
+  animation: tail-sleep 4s ease-in-out infinite alternate;
+}
+
+.state-sleeping .cat-front-paws {
+  transform: translateY(6px) rotate(-15deg);
+  opacity: 0.85;
+}
+
+/* 5. Chasing State (Butterfly) */
+.state-chasing .cat-body-group {
+  animation: walk-bob 0.3s ease-in-out infinite alternate;
+}
+
+.state-chasing .cat-paw-left {
+  animation: leg-walk-left 0.3s ease-in-out infinite alternate;
+}
+
+.state-chasing .cat-paw-right {
+  animation: leg-walk-right 0.3s ease-in-out infinite alternate;
+}
+
+.state-chasing .cat-head-group {
+  animation: head-chase-butterfly 2s ease-in-out infinite alternate;
+}
+
+/* 6. Running state */
+.state-running .cat-body-group {
+  animation: walk-bob 0.2s ease-in-out infinite alternate;
+}
+
+.state-running .cat-paw-left {
+  animation: leg-walk-left 0.2s ease-in-out infinite alternate;
+}
+
+.state-running .cat-paw-right {
+  animation: leg-walk-right 0.2s ease-in-out infinite alternate;
+}
+
+.state-running .cat-tail {
+  animation: tail-walk 0.2s ease-in-out infinite alternate;
+}
+
+
+/* --- CSS Keyframe Definitions --- */
+
+@keyframes walk-bob {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px) rotate(1deg); }
+}
+
+@keyframes leg-walk-left {
+  0% { transform: rotate(-25deg); }
+  100% { transform: rotate(20deg); }
+}
+
+@keyframes leg-walk-right {
+  0% { transform: rotate(20deg); }
+  100% { transform: rotate(-25deg); }
+}
+
+@keyframes tail-wag {
+  0% { transform: rotate(-10deg); }
+  100% { transform: rotate(15deg); }
+}
+
+@keyframes tail-walk {
+  0% { transform: rotate(-20deg); }
+  100% { transform: rotate(20deg); }
+}
+
+@keyframes tail-sleep {
+  0% { transform: rotate(-5deg) scaleX(0.95); }
+  100% { transform: rotate(5deg) scaleX(1.05); }
+}
+
+@keyframes body-breath {
+  0% { transform: scaleY(1); }
+  100% { transform: scaleY(1.03) translateY(-1px); }
+}
+
+@keyframes body-breath-sleep {
+  0% { transform: scaleY(0.96) translateY(4px); }
+  100% { transform: scaleY(1.02) translateY(2px); }
+}
+
+@keyframes shadow-breath {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(1.08); opacity: 0.65; }
+}
+
+@keyframes head-idle {
+  0% { transform: rotate(-2deg); }
+  100% { transform: rotate(3deg) translateY(-1px); }
+}
+
+@keyframes head-blink-look {
+  0%, 45%, 55%, 100% { transform: rotate(0deg) scaleY(1); }
+  48%, 52% { transform: rotate(0deg) scaleY(0.1); } /* Blink */
+  60% { transform: rotate(-4deg); }
+  80% { transform: rotate(4deg); }
+}
+
+@keyframes head-groom {
+  0% { transform: rotate(4deg) translate(-2px, 2px); }
+  100% { transform: rotate(-8deg) translate(-1px, 6px); }
+}
+
+@keyframes paw-lick {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(12px, -24px) rotate(45deg); }
+}
+
+@keyframes head-chase-butterfly {
+  0% { transform: rotate(-10deg) translate(-4px, -2px); }
+  100% { transform: rotate(15deg) translate(2px, -4px); }
+}
+
+
+/* --- Zzz Bubble Animations --- */
+.zzz-container {
+  position: absolute;
+  top: -10px;
+  right: 0px;
+  width: 40px;
+  height: 40px;
+}
+
+.zzz {
+  position: absolute;
+  color: #0ea5e9;
+  font-family: 'Outfit', sans-serif;
+  font-weight: 800;
+  opacity: 0;
+}
+
+.z1 {
+  font-size: 11px;
+  animation: zzz-float 3s infinite 0.2s;
+}
+
+.z2 {
+  font-size: 15px;
+  animation: zzz-float 3s infinite 1.2s;
+}
+
+.z3 {
+  font-size: 19px;
+  animation: zzz-float 3s infinite 2.2s;
+}
+
+@keyframes zzz-float {
+  0% { transform: translate(0, 10px) scale(0.6); opacity: 0; }
+  50% { opacity: 0.8; }
+  100% { transform: translate(15px, -35px) scale(1.1); opacity: 0; }
+}
+
+
+/* --- Butterfly Animation --- */
+.butterfly {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  z-index: 10;
+  animation: butterfly-flight 4s ease-in-out infinite alternate;
+}
+
+.butterfly-svg {
+  width: 100%;
+  height: 100%;
+  animation: butterfly-wings 0.15s linear infinite alternate;
+  transform-origin: center;
+}
+
+@keyframes butterfly-flight {
+  0% { transform: translate(45px, -40px) rotate(10deg); }
+  33% { transform: translate(-50px, -60px) rotate(-15deg); }
+  66% { transform: translate(60px, -70px) rotate(25deg); }
+  100% { transform: translate(-30px, -35px) rotate(-5deg); }
+}
+
+@keyframes butterfly-wings {
+  0% { transform: scaleX(0.2); }
+  100% { transform: scaleX(1); }
+}
+
+
+/* --- Dropped Ground Items --- */
+.dropped-item {
+  position: absolute;
+  bottom: 0px;
+  width: 32px;
+  height: 32px;
+  z-index: 5;
+}
+
+.coffee-item {
+  left: -20px;
+}
+
+.gift-item {
+  left: -20px;
+}
+
+.item-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+@keyframes bounce-gentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 2s ease-in-out infinite;
+}
+
+/* Steam lines rising from coffee */
+.steam-line-1 {
+  opacity: 0;
+  animation: steam-rise 2s infinite 0.2s;
+}
+
+.steam-line-2 {
+  opacity: 0;
+  animation: steam-rise 2s infinite 1s;
+}
+
+@keyframes steam-rise {
+  0% { transform: translateY(2px) scale(0.8); opacity: 0; }
+  50% { opacity: 0.6; }
+  100% { transform: translateY(-8px) scale(1.2); opacity: 0; }
+}
