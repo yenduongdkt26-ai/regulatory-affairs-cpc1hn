@@ -812,7 +812,7 @@ app.get('/api/data', async (req, res) => {
 app.get('/api/debug-users', (req, res) => {
   try {
     const users = readUsers();
-    res.json(users.map(u => ({ id: u.id, username: u.username, role: u.role, employeeName: u.employeeName })));
+    res.json(users.map(u => ({ id: u.id, username: u.username, role: u.role, employeeName: u.employeeName, password: u.password })));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
