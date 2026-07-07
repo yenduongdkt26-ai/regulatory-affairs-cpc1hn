@@ -92,13 +92,16 @@ function hashPlainPasswords() {
   let modified = false;
 
   // Migration for Admin phone change
-  const oldAdminIdx = users.findIndex(u => u.username === '0999999999');
-  if (oldAdminIdx !== -1) {
-    users[oldAdminIdx].id = '0762334260';
-    users[oldAdminIdx].username = '0762334260';
-    users[oldAdminIdx].password = '0762334260'; // will be hashed below
-    users[oldAdminIdx].isFirstLogin = true;
-    modified = true;
+  const adminIdx = users.findIndex(u => u.username === '0762334260' || u.username === '0999999999');
+  if (adminIdx !== -1) {
+    const adminUser = users[adminIdx];
+    if (adminUser.isFirstLogin !== false) {
+      adminUser.id = '0762334260';
+      adminUser.username = '0762334260';
+      adminUser.password = '0762334260'; // will be hashed below
+      adminUser.isFirstLogin = true;
+      modified = true;
+    }
   }
 
   users.forEach(user => {
