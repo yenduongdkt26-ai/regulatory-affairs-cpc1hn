@@ -817,22 +817,6 @@ app.get('/api/data', async (req, res) => {
   });
 });
 
-// Temporary debug endpoint to list users
-app.get('/api/debug-users', (req, res) => {
-  try {
-    const users = readUsers();
-    const admin = users.find(u => u.username === '0762334260');
-    const check1 = admin ? bcrypt.compareSync('0762334260', admin.password) : false;
-    res.json({
-      check1,
-      adminPasswordHash: admin?.password,
-      users: users.map(u => ({ id: u.id, username: u.username, role: u.role, employeeName: u.employeeName }))
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // Authentication: Login
 app.post('/api/auth/login', (req, res) => {
   const { username, password } = req.body;
