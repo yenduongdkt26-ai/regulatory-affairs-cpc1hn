@@ -15,7 +15,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = 'regulatory_affairs_secret_key_12345';
+const JWT_SECRET = process.env.JWT_SECRET || 'regulatory_affairs_secret_key_12345';
 
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 if (process.env.DATA_DIR && !fs.existsSync(DATA_DIR)) {
@@ -24,8 +24,46 @@ if (process.env.DATA_DIR && !fs.existsSync(DATA_DIR)) {
 
 const DB_FILE = path.join(DATA_DIR, 'database.json');
 
-app.use(cors());
+const allowedOrigins = [
+  'https://regulatoryaffairscpc1hn.netlify.app',
+  'http://localhost:5173',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+}));
+
 app.use(express.json());
+
+// Simple memory-based rate limiter for login
+const loginAttempts = {};
+function loginRateLimiter(req, res, next) {
+  const ip = req.ip;
+  const now = Date.now();
+  
+  if (!loginAttempts[ip]) {
+    loginAttempts[ip] = [];
+  }
+  
+  // Clean up attempts older than 10 minutes (10 * 60 * 1000)
+  loginAttempts[ip] = loginAttempts[ip].filter(timestamp => now - timestamp < 10 * 60 * 1000);
+  
+  if (loginAttempts[ip].length >= 30) {
+    return res.status(429).json({ error: "Bạn đã yêu cầu đăng nhập quá nhiều lần. Vui lòng thử lại sau 10 phút." });
+  }
+  
+  loginAttempts[ip].push(now);
+  next();
+}
 
 // Google Sheets CSV Export URLs
 const GOOGLE_SHEETS = {
@@ -801,7 +839,7 @@ setInterval(updateCache, 1 * 60 * 1000);
 // --- API Endpoints ---
 
 // Get aggregated data (with optional force refresh)
-app.get('/api/data', async (req, res) => {
+app.get('/api/data', authenticateToken, async (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
   const forceRefresh = req.query.refresh === 'true';
   if (forceRefresh || !dataCache.data) {
@@ -811,14 +849,63 @@ app.get('/api/data', async (req, res) => {
       return res.status(500).json({ error: "Failed to fetch data", details: err.message });
     }
   }
+
+  // Clone cache to avoid modifying the global cache
+  const resultData = JSON.parse(JSON.stringify(dataCache.data));
+  const user = req.user;
+
+  if (user && user.role !== 'admin') {
+    const empName = user.employeeName;
+
+    // Filter domestic sheets
+    if (resultData.domestic && resultData.domestic.sheets) {
+      const domSheets = resultData.domestic.sheets;
+      Object.keys(domSheets).forEach(key => {
+        if (Array.isArray(domSheets[key])) {
+          domSheets[key] = domSheets[key].filter(item => 
+            item.inCharge && item.inCharge.includes(empName)
+          );
+        }
+      });
+      // Filter domestic detail lists
+      ['overdueList', 'nearDeadline1mList', 'nearDeadline2mList'].forEach(listKey => {
+        if (Array.isArray(resultData.domestic[listKey])) {
+          resultData.domestic[listKey] = resultData.domestic[listKey].filter(item => 
+            item.inCharge && item.inCharge.includes(empName)
+          );
+        }
+      });
+    }
+
+    // Filter export sheets
+    if (resultData.export && resultData.export.sheets) {
+      const expSheets = resultData.export.sheets;
+      Object.keys(expSheets).forEach(key => {
+        if (Array.isArray(expSheets[key])) {
+          expSheets[key] = expSheets[key].filter(item => 
+            item.inCharge && item.inCharge.includes(empName)
+          );
+        }
+      });
+      // Filter export detail lists
+      ['overdueList', 'nearDeadline1mList', 'nearDeadline2mList'].forEach(listKey => {
+        if (Array.isArray(resultData.export[listKey])) {
+          resultData.export[listKey] = resultData.export[listKey].filter(item => 
+            item.inCharge && item.inCharge.includes(empName)
+          );
+        }
+      });
+    }
+  }
+
   res.json({
     lastUpdated: dataCache.timestamp,
-    ...dataCache.data
+    ...resultData
   });
 });
 
 // Authentication: Login
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', loginRateLimiter, (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: "Vui lòng điền đầy đủ số điện thoại và mật khẩu" });
@@ -1006,7 +1093,7 @@ app.delete('/api/auth/users/:id', (req, res) => {
 });
 
 // Chatbot query endpoint
-app.post('/api/chatbot/query', async (req, res) => {
+app.post('/api/chatbot/query', authenticateToken, async (req, res) => {
   const { message, history } = req.body;
   if (!message) {
     return res.status(400).json({ error: "Vui lòng nhập tin nhắn" });
