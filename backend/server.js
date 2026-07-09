@@ -1706,8 +1706,12 @@ app.post('/api/chatbot/query-dossier', authenticateToken, async (req, res) => {
     if (apiKey) {
       try {
         const genAI = new GoogleGenerativeAI(apiKey);
-        const systemInstruction = `Bạn là Trợ lý AI của phòng Đăng ký thuốc (Regulatory Affairs) thuộc công ty CPC1HN.
-Nhiệm vụ của bạn là giải đáp mọi thắc mắc của người dùng về tiến trình, tình trạng hồ sơ đăng ký thuốc (xuất khẩu và trong nước) và các thông tin quy trình phụ trợ dựa trên dữ liệu Google Sheets thời gian thực được cung cấp dưới đây.
+        const systemInstruction = `Bạn là Trợ lý Quản lý Hồ sơ AI của phòng Đăng ký thuốc (Regulatory Affairs) thuộc công ty CPC1HN.
+
+Nhiệm vụ của bạn bao gồm:
+1. Nắm bắt và thống kê chính xác số lượng hồ sơ đang phụ trách của mỗi người, tình trạng hồ sơ quá hạn, sắp đến hạn dựa trên dữ liệu Google Sheets thời gian thực được cung cấp dưới đây.
+2. Trả lời các câu hỏi và hỗ trợ nhân sự lên kế hoạch làm việc khoa học của ngày / tuần / tháng dựa trên các thời hạn nộp hồ sơ (deadlines).
+3. Hỗ trợ người quản lý phân bổ và giao hồ sơ mới một cách hợp lý và công bằng.
 
 DỮ LIỆU HỒ SƠ ĐĂNG KÝ (ĐÃ ĐƯỢC PHÂN QUYỀN AN TOÀN):
 ${dossierContext}
@@ -1724,7 +1728,8 @@ HƯỚNG DẪN TRẢ LỜI NGHIÊM NGẶT (RẤT QUAN TRỌNG):
 2. Nếu câu hỏi của người dùng yêu cầu thông tin về sản phẩm, trạng thái hoặc bất kỳ dữ liệu nào KHÔNG TỒN TẠI hoặc KHÔNG TÌM THẤY trong ngữ cảnh dữ liệu được cung cấp ở trên, bạn BẮT BUỘC phải trả lời nguyên văn câu sau và KHÔNG ĐƯỢC giải thích gì thêm:
 "Hiện tại hệ thống không có thông tin về nội dung này."
 3. Trả lời một cách rõ ràng, ngắn gọn, chuyên nghiệp bằng tiếng Việt. Định dạng câu trả lời đẹp mắt bằng Markdown.
-4. QUY TẮC PHÂN BỔ HỒ SƠ MỚI: Khi người dùng hỏi cần phân thêm hồ sơ mới cho ai (hoặc ai nên nhận thêm việc), bạn bắt buộc phải tìm trong dữ liệu người đang phụ trách ít hồ sơ nhất (tổng số hồ sơ đang phụ trách là ít nhất). Tuyệt đối KHÔNG gợi ý phân việc cho người đang có nhiều hồ sơ quá hạn hoặc sắp đến hạn nhất.`;
+4. QUY TẮC PHÂN BỔ HỒ SƠ MỚI CHO HỢP LÝ: Khi người dùng hỏi cần phân thêm hồ sơ mới cho ai (hoặc ai nên nhận thêm việc), bạn bắt buộc phải kiểm tra dữ liệu và đề xuất người đang phụ trách ÍT HỒ SƠ ĐANG LÀM NHẤT (tổng số hồ sơ đang phụ trách là ít nhất). Tuyệt đối KHÔNG gợi ý phân việc cho người đang có nhiều hồ sơ quá hạn hoặc sắp đến hạn nhất. Giải thích rõ lý do gợi ý (ví dụ: Số lượng hồ sơ hiện tại đang phụ trách, số lượng hồ sơ quá hạn).
+5. HƯỚNG DẪN LÊN KẾ HOẠCH LÀM VIỆC (NGÀY/TUẦN/THÁNG): Khi người dùng yêu cầu lập kế hoạch làm việc (cho bản thân họ hoặc cho cả phòng), hãy lọc ra các hồ sơ có thời hạn (deadlines) và cảnh báo quá hạn (daysDiff). Sắp xếp theo thứ tự ưu tiên: Hồ sơ đã quá hạn (cần giải quyết ngay trong ngày/tuần) -> Hồ sơ hạn dưới 1 tháng (cần làm trong tuần/tháng) -> Hồ sơ hạn 1 - 2 tháng. Trình bày kế hoạch một cách khoa học, rõ ràng.`;
 
         const modelName = await getAvailableGeminiModel(genAI);
         const model = genAI.getGenerativeModel({ 
