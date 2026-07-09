@@ -1516,6 +1516,41 @@ function serializeDossierDataForAI(resultData) {
   return context;
 }
 
+// Auto-adaptive Gemini model picker
+let selectedGeminiModel = null;
+
+async function getAvailableGeminiModel(genAI) {
+  if (selectedGeminiModel) return selectedGeminiModel;
+  
+  try {
+    const list = await genAI.listModels();
+    // Find first flash or pro model that supports generateContent
+    const candidates = list.models.filter(m => 
+      m.supportedMethods && 
+      m.supportedMethods.includes('generateContent') && 
+      (m.name.includes('gemini-2.5-flash') || m.name.includes('gemini-1.5-flash') || m.name.includes('gemini-2.0-flash'))
+    );
+    
+    if (candidates.length > 0) {
+      selectedGeminiModel = candidates[0].name.replace('models/', '');
+      console.log(`Auto-selected Gemini model: ${selectedGeminiModel}`);
+      return selectedGeminiModel;
+    }
+
+    const anyGen = list.models.find(m => m.supportedMethods && m.supportedMethods.includes('generateContent'));
+    if (anyGen) {
+      selectedGeminiModel = anyGen.name.replace('models/', '');
+      console.log(`Auto-selected Gemini model (fallback): ${selectedGeminiModel}`);
+      return selectedGeminiModel;
+    }
+  } catch (err) {
+    console.error("Failed to list models, using default gemini-2.5-flash:", err.message);
+  }
+
+  selectedGeminiModel = "gemini-2.5-flash";
+  return selectedGeminiModel;
+}
+
 // Execute Dossier Chatbot Query (Real-time Google Sheet Data with security filtering)
 app.post('/api/chatbot/query-dossier', authenticateToken, async (req, res) => {
   const { conversationId, message } = req.body;
@@ -1680,8 +1715,9 @@ HƯỚNG DẪN TRẢ LỜI NGHIÊM NGẶT (RẤT QUAN TRỌNG):
 "Hiện tại hệ thống không có thông tin về nội dung này."
 3. Trả lời một cách rõ ràng, ngắn gọn, chuyên nghiệp bằng tiếng Việt. Định dạng câu trả lời đẹp mắt bằng Markdown.`;
 
+        const modelName = await getAvailableGeminiModel(genAI);
         const model = genAI.getGenerativeModel({ 
-          model: "gemini-1.5-flash",
+          model: modelName,
           systemInstruction: systemInstruction
         });
 
@@ -1812,8 +1848,9 @@ Yêu cầu bắt buộc về định dạng câu trả lời bằng tiếng Vi�
    - **Cảnh báo:** (Nếu ngữ cảnh chứa văn bản có tình trạng hiệu lực 'chưa xác định', bạn bắt buộc phải ghi rõ cảnh báo: "Lưu ý: Văn bản [Tên văn bản] hiện đang ở tình trạng chưa xác định hiệu lực pháp lý hoặc chưa chính thức có hiệu lực, vui lòng kiểm chứng kỹ trước khi áp dụng thực tế"). Nếu không có văn bản chưa xác định nào, bỏ qua phần này hoặc ghi "Không có".
 2. Nếu trong ngữ cảnh trên KHÔNG chứa bất kỳ thông tin nào liên quan đến câu hỏi hoặc không thể tìm thấy căn cứ phù hợp để trả lời, bạn bắt buộc phải trả lời nguyên văn câu sau: "Chưa tìm thấy căn cứ phù hợp trong kho văn bản." Không thêm bớt bất kỳ từ nào khác.`;
 
+        const modelName = await getAvailableGeminiModel(genAI);
         const model = genAI.getGenerativeModel({ 
-          model: "gemini-1.5-flash",
+          model: modelName,
           systemInstruction: systemInstruction
         });
 
