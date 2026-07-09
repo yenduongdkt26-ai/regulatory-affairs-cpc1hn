@@ -1630,16 +1630,29 @@ app.post('/api/chatbot/query-dossier', authenticateToken, async (req, res) => {
       created_at: new Date().toISOString()
     };
 
-    // Gather history
+    // Gather history and clean it to alternate strictly: user, model, user, model
     const prevMessages = chatDb.messages
       .filter(m => m.conversation_id === conversationId)
       .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
       .slice(-6); 
 
-    const formattedHistory = prevMessages.map(m => ({
-      role: m.sender === 'user' ? 'user' : 'model',
-      parts: [{ text: m.text }]
-    }));
+    const cleanedHistory = [];
+    let expectedRole = 'user';
+    prevMessages.forEach(m => {
+      const currentRole = m.sender === 'user' ? 'user' : 'model';
+      if (currentRole === expectedRole) {
+        cleanedHistory.push({
+          role: currentRole,
+          parts: [{ text: m.text }]
+        });
+        expectedRole = expectedRole === 'user' ? 'model' : 'user';
+      }
+    });
+
+    // Make sure history ends with 'model' so the next message can be 'user'
+    if (cleanedHistory.length > 0 && cleanedHistory[cleanedHistory.length - 1].role === 'user') {
+      cleanedHistory.pop();
+    }
 
     // Call Gemini API
     const apiKey = process.env.GEMINI_API_KEY;
@@ -1673,14 +1686,14 @@ HƯỚNG DẪN TRẢ LỜI NGHIÊM NGẶT (RẤT QUAN TRỌNG):
         });
 
         const chat = model.startChat({
-          history: formattedHistory
+          history: cleanedHistory
         });
 
         const result = await chat.sendMessage(message);
         replyText = result.response.text();
       } catch (err) {
         console.error("Gemini API Dossier Query Error:", err);
-        replyText = "Hiện tại dịch vụ AI đang bận hoặc gặp sự cố kết nối. Vui lòng thử lại sau giây lát.";
+        replyText = `Không thể kết nối dịch vụ AI (${err.message}). Vui lòng thử lại sau giây lát.`;
       }
     } else {
       replyText = "Hệ thống AI chưa được cấu hình khóa API (GEMINI_API_KEY). Vui lòng cấu hình biến môi trường này để kích hoạt Chatbot.";
