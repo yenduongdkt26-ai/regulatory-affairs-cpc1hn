@@ -82,7 +82,8 @@ const GOOGLE_SHEETS = {
 // Memory Cache
 let dataCache = {
   timestamp: null,
-  data: null
+  data: null,
+  customSheets: {}
 };
 
 // Helper: Read users from database.json
@@ -829,6 +830,25 @@ async function updateCache() {
   } catch (err) {
     console.error("Cache update failed:", err.message);
   }
+
+  // Fetch custom chatbot sheets
+  try {
+    if (fs.existsSync(chatbotSheetsDbPath)) {
+      const customSheets = JSON.parse(fs.readFileSync(chatbotSheetsDbPath, 'utf8'));
+      for (const sheet of customSheets) {
+        try {
+          const res = await axios.get(`${sheet.url}&t=${Date.now()}`);
+          const rows = parseCSV(res.data);
+          dataCache.customSheets[sheet.id] = rows;
+          console.log(`Successfully fetched custom sheet: ${sheet.title} (${rows.length} rows)`);
+        } catch (sheetErr) {
+          console.error(`Failed to fetch custom sheet ${sheet.title}:`, sheetErr.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Custom sheets cache update failed:", err.message);
+  }
 }
 
 // Seed cache on startup
@@ -1111,6 +1131,7 @@ app.post('/api/chatbot/query', authenticateToken, async (req, res) => {
 const legalDocDbPath = path.join(DATA_DIR, 'legal_documents.json');
 const legalSyncLogDbPath = path.join(DATA_DIR, 'legal_sync_logs.json');
 const chatbotChatsDbPath = path.join(DATA_DIR, 'chatbot_chats.json');
+const chatbotSheetsDbPath = path.join(DATA_DIR, 'chatbot_sheets.json');
 
 // Middleware: Authenticate JWT Token
 function authenticateToken(req, res, next) {
@@ -1344,6 +1365,343 @@ app.get('/api/chatbot/messages/:conversationId', authenticateToken, (req, res) =
   } catch (err) {
     console.error("Error fetching messages:", err);
     res.status(500).json({ error: "Lỗi lấy nội dung hội thoại" });
+  }
+});
+
+// --- Admin Chatbot Sheets Management ---
+
+// Get all configured custom sheets (Admin only)
+app.get('/api/admin/chatbot-sheets', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    let sheets = [];
+    if (fs.existsSync(chatbotSheetsDbPath)) {
+      sheets = JSON.parse(fs.readFileSync(chatbotSheetsDbPath, 'utf8'));
+    }
+    res.json(sheets);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Add a custom sheet (Admin only)
+app.post('/api/admin/chatbot-sheets', authenticateToken, requireAdmin, async (req, res) => {
+  const { title, url, security, filterColumn } = req.body;
+  if (!title || !url || !security) {
+    return res.status(400).json({ error: "Thiếu thông tin cấu hình nguồn dữ liệu" });
+  }
+
+  try {
+    let sheets = [];
+    if (fs.existsSync(chatbotSheetsDbPath)) {
+      sheets = JSON.parse(fs.readFileSync(chatbotSheetsDbPath, 'utf8'));
+    }
+
+    const newSheet = {
+      id: 'sheet_' + Date.now().toString(),
+      title,
+      url,
+      security,
+      filterColumn: security === 'role-filtered' ? filterColumn : ''
+    };
+
+    sheets.push(newSheet);
+    fs.writeFileSync(chatbotSheetsDbPath, JSON.stringify(sheets, null, 2));
+
+    // Fetch and cache immediately
+    try {
+      console.log(`Fetching and caching new custom sheet immediately: ${title}`);
+      const resData = await axios.get(`${url}&t=${Date.now()}`);
+      const rows = parseCSV(resData.data);
+      dataCache.customSheets[newSheet.id] = rows;
+    } catch (fetchErr) {
+      console.error(`Failed to cache new sheet immediately:`, fetchErr.message);
+    }
+
+    res.json({ message: "Thêm nguồn dữ liệu thành công!", sheet: newSheet });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Delete a custom sheet (Admin only)
+app.delete('/api/admin/chatbot-sheets/:id', authenticateToken, requireAdmin, (req, res) => {
+  const { id } = req.params;
+  try {
+    let sheets = [];
+    if (fs.existsSync(chatbotSheetsDbPath)) {
+      sheets = JSON.parse(fs.readFileSync(chatbotSheetsDbPath, 'utf8'));
+    }
+
+    const idx = sheets.findIndex(s => s.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ error: "Không tìm thấy nguồn dữ liệu" });
+    }
+
+    const deletedTitle = sheets[idx].title;
+    sheets.splice(idx, 1);
+    fs.writeFileSync(chatbotSheetsDbPath, JSON.stringify(sheets, null, 2));
+
+    // Remove from in-memory cache
+    delete dataCache.customSheets[id];
+
+    res.json({ message: `Đã xóa nguồn dữ liệu: ${deletedTitle}` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Helper: serialize dossier data to plain text format for AI prompt
+function serializeDossierDataForAI(resultData) {
+  let context = "";
+
+  if (resultData.domestic) {
+    context += "=== HỒ SƠ TRONG NƯỚC ===\n";
+    const sheets = resultData.domestic.sheets || {};
+    
+    if (sheets.hsbs && sheets.hsbs.length > 0) {
+      context += "\nDanh sách hồ sơ bổ sung (HSBS):\n";
+      sheets.hsbs.forEach((item, idx) => {
+        context += `${idx + 1}. Thuốc: ${item.productName || '—'} | Tình trạng: ${item.status || '—'} | Số TN: ${item.tnNumber || '—'} | Hạn ngày BS: ${item.deadline || '—'} | Cảnh báo: ${item.daysDiff !== null ? (item.daysDiff < 0 ? `Quá hạn ${Math.abs(item.daysDiff)} ngày` : `Còn ${item.daysDiff} ngày`) : '—'} | Ghi chú: ${item.note || '—'}\n`;
+      });
+    }
+
+    if (sheets.hsgh && sheets.hsgh.length > 0) {
+      context += "\nDanh sách hồ sơ gia hạn (HSGH):\n";
+      sheets.hsgh.forEach((item, idx) => {
+        context += `${idx + 1}. Thuốc: ${item.productName || '—'} | Tình trạng: ${item.status || '—'} | Hạn ngày gia hạn: ${item.deadline || '—'} | Cảnh báo: ${item.daysDiff !== null ? (item.daysDiff < 0 ? `Quá hạn ${Math.abs(item.daysDiff)} ngày` : `Còn ${item.daysDiff} ngày`) : '—'} | Ghi chú: ${item.note || '—'}\n`;
+      });
+    }
+
+    if (sheets.hsm && sheets.hsm.length > 0) {
+      context += "\nDanh sách hồ sơ mới (HSM):\n";
+      sheets.hsm.forEach((item, idx) => {
+        context += `${idx + 1}. Phân loại: ${item.classification || '—'} | Tên Thuốc: ${item.productName || '—'} | Dạng bào chế: ${item.formulation || '—'} | Hoạt chất: ${item.ingredients || '—'} | Tình trạng: ${item.status || '—'}\n`;
+      });
+    }
+
+    if (sheets.hstd && sheets.hstd.length > 0) {
+      context += "\nDanh sách hồ sơ thay đổi (HSTĐ):\n";
+      sheets.hstd.forEach((item, idx) => {
+        context += `${idx + 1}. Thuốc: ${item.productName || '—'} | Phân loại: ${item.classification || '—'} | Nội dung thay đổi: ${item.content || '—'} | Tình trạng: ${item.status || '—'} | Giải trình: ${item.explanation || '—'}\n`;
+      });
+    }
+  }
+
+  if (resultData.export) {
+    context += "\n=== HỒ SƠ XUẤT KHẨU ===\n";
+    const sheets = resultData.export.sheets || {};
+
+    if (sheets.hsxk && sheets.hsxk.length > 0) {
+      context += "\nDanh sách hồ sơ xuất khẩu đang làm (HSXK):\n";
+      sheets.hsxk.forEach((item, idx) => {
+        context += `${idx + 1}. Sản phẩm: ${item.productName || '—'} | Tên XK: ${item.exportName || '—'} | Quốc gia: ${item.country || '—'} | Hạn nộp: ${item.deadline || '—'} | Cảnh báo: ${item.daysDiff !== null ? (item.daysDiff < 0 ? `Quá hạn ${Math.abs(item.daysDiff)} ngày` : `Còn ${item.daysDiff} ngày`) : '—'} | Phân loại: ${item.classification || '—'} | Phụ trách: ${item.inCharge?.join(', ') || '—'} | Ghi chú: ${item.note || '—'}\n`;
+      });
+    }
+
+    if (sheets.nhanDangKy && sheets.nhanDangKy.length > 0) {
+      context += "\nDanh sách nhãn đăng ký (NDK):\n";
+      sheets.nhanDangKy.forEach((item, idx) => {
+        context += `${idx + 1}. Sản phẩm: ${item.productName || '—'} | Tên XK: ${item.exportName || '—'} | Quốc gia: ${item.country || '—'} | Hạn nộp: ${item.deadline || '—'} | Cảnh báo: ${item.daysDiff !== null ? (item.daysDiff < 0 ? `Quá hạn ${Math.abs(item.daysDiff)} ngày` : `Còn ${item.daysDiff} ngày`) : '—'} | Phân loại: ${item.classification || '—'} | Phụ trách: ${item.inCharge?.join(', ') || '—'} | Ghi chú: ${item.note || '—'}\n`;
+      });
+    }
+
+    if (sheets.nhanSanXuat && sheets.nhanSanXuat.length > 0) {
+      context += "\nDanh sách nhãn sản xuất (NSX):\n";
+      sheets.nhanSanXuat.forEach((item, idx) => {
+        context += `${idx + 1}. Sản phẩm: ${item.productName || '—'} | Tên XK: ${item.exportName || '—'} | Quốc gia: ${item.country || '—'} | Hạn nộp: ${item.deadline || '—'} | Cảnh báo: ${item.daysDiff !== null ? (item.daysDiff < 0 ? `Quá hạn ${Math.abs(item.daysDiff)} ngày` : `Còn ${item.daysDiff} ngày`) : '—'} | Phân loại: ${item.classification || '—'} | Phụ trách: ${item.inCharge?.join(', ') || '—'} | Ghi chú: ${item.note || '—'}\n`;
+      });
+    }
+  }
+  
+  return context;
+}
+
+// Execute Dossier Chatbot Query (Real-time Google Sheet Data with security filtering)
+app.post('/api/chatbot/query-dossier', authenticateToken, async (req, res) => {
+  const { conversationId, message } = req.body;
+  if (!conversationId || !message) {
+    return res.status(400).json({ error: "Thiếu thông tin hội thoại hoặc câu hỏi" });
+  }
+
+  try {
+    let chatDb = { conversations: [], messages: [] };
+    if (fs.existsSync(chatbotChatsDbPath)) {
+      chatDb = JSON.parse(fs.readFileSync(chatbotChatsDbPath, 'utf8'));
+    }
+    
+    // Verify ownership
+    const conv = chatDb.conversations.find(c => c.id === conversationId && c.user_id === req.user.id);
+    if (!conv) {
+      return res.status(403).json({ error: "Không có quyền truy cập hội thoại này" });
+    }
+
+    // Fetch real-time cached Google Sheets data
+    if (!dataCache.data) {
+      try {
+        await updateCache();
+      } catch (err) {
+        return res.status(500).json({ error: "Failed to load sheets data for chatbot context." });
+      }
+    }
+
+    const resultData = JSON.parse(JSON.stringify(dataCache.data));
+    const user = req.user;
+
+    // Filter main sheets
+    if (user && user.role !== 'admin') {
+      const empName = user.employeeName;
+
+      // Filter domestic sheets
+      if (resultData.domestic && resultData.domestic.sheets) {
+        const domSheets = resultData.domestic.sheets;
+        Object.keys(domSheets).forEach(key => {
+          if (Array.isArray(domSheets[key])) {
+            domSheets[key] = domSheets[key].filter(item => 
+              item.inCharge && item.inCharge.includes(empName)
+            );
+          }
+        });
+      }
+
+      // Filter export sheets
+      if (resultData.export && resultData.export.sheets) {
+        const expSheets = resultData.export.sheets;
+        Object.keys(expSheets).forEach(key => {
+          if (Array.isArray(expSheets[key])) {
+            expSheets[key] = expSheets[key].filter(item => 
+              item.inCharge && item.inCharge.includes(empName)
+            );
+          }
+        });
+      }
+    }
+
+    // Serialize filtered main sheets
+    const dossierContext = serializeDossierDataForAI(resultData);
+
+    // Serialize custom sheets with security filters
+    let customSheetsContext = "";
+    if (fs.existsSync(chatbotSheetsDbPath)) {
+      const sheetsList = JSON.parse(fs.readFileSync(chatbotSheetsDbPath, 'utf8'));
+      for (const sh of sheetsList) {
+        const cachedRows = dataCache.customSheets[sh.id];
+        if (!cachedRows || cachedRows.length === 0) continue;
+
+        if (sh.security === 'private' && user.role !== 'admin') {
+          continue; 
+        }
+
+        let finalRows = cachedRows;
+
+        if (sh.security === 'role-filtered' && user.role !== 'admin') {
+          const header = cachedRows[0];
+          const colIndex = header.findIndex(cell => 
+            cell.toLowerCase().trim() === sh.filterColumn.toLowerCase().trim()
+          );
+
+          if (colIndex !== -1) {
+            const bodyRows = cachedRows.slice(1).filter(row => {
+              const cellVal = row[colIndex] || "";
+              return cellVal.toLowerCase().includes(user.employeeName.toLowerCase());
+            });
+            finalRows = [header, ...bodyRows];
+          }
+        }
+
+        if (finalRows.length > 1) {
+          customSheetsContext += `\nDANH MỤC PHỤ TRỢ: ${sh.title.toUpperCase()}\n`;
+          finalRows.forEach((row, rowIdx) => {
+            if (rowIdx === 0) {
+              customSheetsContext += `Cột: [${row.join(' | ')}]\n`;
+            } else {
+              customSheetsContext += `- Dòng ${rowIdx}: [${row.join(' | ')}]\n`;
+            }
+          });
+        }
+      }
+    }
+
+    // Save user message to database
+    const userMsg = {
+      id: 'msg_' + Date.now().toString(),
+      conversation_id: conversationId,
+      sender: 'user',
+      text: message,
+      created_at: new Date().toISOString()
+    };
+
+    // Gather history
+    const prevMessages = chatDb.messages
+      .filter(m => m.conversation_id === conversationId)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+      .slice(-6); 
+
+    const formattedHistory = prevMessages.map(m => ({
+      role: m.sender === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text }]
+    }));
+
+    // Call Gemini API
+    const apiKey = process.env.GEMINI_API_KEY;
+    let replyText = "";
+
+    if (apiKey) {
+      try {
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const systemInstruction = `Bạn là Trợ lý AI của phòng Đăng ký thuốc (Regulatory Affairs) thuộc công ty CPC1HN.
+Nhiệm vụ của bạn là giải đáp mọi thắc mắc của người dùng về tiến trình, tình trạng hồ sơ đăng ký thuốc (xuất khẩu và trong nước) và các thông tin quy trình phụ trợ dựa trên dữ liệu Google Sheets thời gian thực được cung cấp dưới đây.
+
+DỮ LIỆU HỒ SƠ ĐĂNG KÝ (ĐÃ ĐƯỢC PHÂN QUYỀN AN TOÀN):
+${dossierContext}
+
+DỮ LIỆU QUY TRÌNH PHỤ TRỢ (ĐÃ ĐƯỢC PHÂN QUYỀN AN TOÀN):
+${customSheetsContext || "Hiện không có tài liệu phụ trợ nào bổ sung."}
+
+THÔNG TIN NGƯỜI DÙNG:
+- Người dùng đang trò chuyện: ${user.employeeName}
+- Vai trò: ${user.role}
+
+HƯỚNG DẪN TRẢ LỜI NGHIÊM NGẶT (RẤT QUAN TRỌNG):
+1. Bạn chỉ được trả lời dựa hoàn toàn trên Dữ liệu hồ sơ và Dữ liệu quy trình phụ trợ được cung cấp ở trên. Bạn tuyệt đối KHÔNG ĐƯỢC tự bịa đặt, suy đoán hoặc tự vẽ ra bất kỳ thông tin nào không xuất hiện trong dữ liệu được cung cấp.
+2. Nếu câu hỏi của người dùng yêu cầu thông tin về sản phẩm, trạng thái hoặc bất kỳ dữ liệu nào KHÔNG TỒN TẠI hoặc KHÔNG TÌM THẤY trong ngữ cảnh dữ liệu được cung cấp ở trên, bạn BẮT BUỘC phải trả lời nguyên văn câu sau và KHÔNG ĐƯỢC giải thích gì thêm:
+"Hiện tại hệ thống không có thông tin về nội dung này."
+3. Trả lời một cách rõ ràng, ngắn gọn, chuyên nghiệp bằng tiếng Việt. Định dạng câu trả lời đẹp mắt bằng Markdown.`;
+
+        const model = genAI.getGenerativeModel({ 
+          model: "gemini-1.5-flash",
+          systemInstruction: systemInstruction
+        });
+
+        const chat = model.startChat({
+          history: formattedHistory
+        });
+
+        const result = await chat.sendMessage(message);
+        replyText = result.response.text();
+      } catch (err) {
+        console.error("Gemini API Dossier Query Error:", err);
+        replyText = "Hiện tại dịch vụ AI đang bận hoặc gặp sự cố kết nối. Vui lòng thử lại sau giây lát.";
+      }
+    } else {
+      replyText = "Hệ thống AI chưa được cấu hình khóa API (GEMINI_API_KEY). Vui lòng cấu hình biến môi trường này để kích hoạt Chatbot.";
+    }
+
+    const botMsg = {
+      id: 'msg_' + (Date.now() + 1).toString(),
+      conversation_id: conversationId,
+      sender: 'bot',
+      text: replyText,
+      created_at: new Date().toISOString()
+    };
+
+    chatDb.messages.push(userMsg, botMsg);
+    fs.writeFileSync(chatbotChatsDbPath, JSON.stringify(chatDb, null, 2));
+
+    console.log(`[Dossier AI Audit Log] User: ${user.employeeName} (${user.role}) | Msg: "${message}" | Bot: "${replyText.substring(0, 100)}..."`);
+    res.json(botMsg);
+  } catch (err) {
+    console.error("Error executing dossier query:", err);
+    res.status(500).json({ error: "Đã xảy ra lỗi khi xử lý câu hỏi của bạn" });
   }
 });
 

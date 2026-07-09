@@ -11,7 +11,10 @@ import {
   AlertCircle, 
   CheckCircle2,
   LockOpen,
-  Trash2
+  Trash2,
+  Database,
+  Link2,
+  ShieldCheck
 } from 'lucide-react';
 
 export default function AdminPanel({ employees, token }) {
@@ -24,6 +27,14 @@ export default function AdminPanel({ employees, token }) {
 
   const [isCustomEmployee, setIsCustomEmployee] = useState(false);
   const [customEmployeeName, setCustomEmployeeName] = useState('');
+
+  // Chatbot custom sheets states
+  const [customSheets, setCustomSheets] = useState([]);
+  const [sheetTitle, setSheetTitle] = useState('');
+  const [sheetUrl, setSheetUrl] = useState('');
+  const [sheetSecurity, setSheetSecurity] = useState('public');
+  const [sheetFilterColumn, setSheetFilterColumn] = useState('');
+  const [sheetLoading, setSheetLoading] = useState(false);
 
   // Fetch existing accounts
   const fetchAccounts = async () => {
@@ -39,11 +50,70 @@ export default function AdminPanel({ employees, token }) {
     }
   };
 
+  const fetchCustomSheets = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/admin/chatbot-sheets`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCustomSheets(res.data);
+    } catch (err) {
+      console.error("Error fetching custom sheets:", err);
+    }
+  };
+
+  const handleAddSheet = async (e) => {
+    e.preventDefault();
+    if (!sheetTitle || !sheetUrl || !sheetSecurity) return;
+    if (sheetSecurity === 'role-filtered' && !sheetFilterColumn) {
+      setMessage({ text: 'Vui lòng điền tên cột phụ trách để lọc bảo mật', type: 'error' });
+      return;
+    }
+
+    setSheetLoading(true);
+    setMessage({ text: '', type: '' });
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/admin/chatbot-sheets`, {
+        title: sheetTitle,
+        url: sheetUrl,
+        security: sheetSecurity,
+        filterColumn: sheetFilterColumn
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setMessage({ text: res.data.message, type: 'success' });
+      setSheetTitle('');
+      setSheetUrl('');
+      setSheetSecurity('public');
+      setSheetFilterColumn('');
+      fetchCustomSheets();
+    } catch (err) {
+      setMessage({ text: err.response?.data?.error || 'Thêm nguồn dữ liệu thất bại.', type: 'error' });
+    } finally {
+      setSheetLoading(false);
+    }
+  };
+
+  const handleDeleteSheet = async (sheetId) => {
+    if (!window.confirm("Bạn có chắc chắn muốn xóa nguồn dữ liệu này khỏi Chatbot?")) return;
+    try {
+      const res = await axios.delete(`${API_BASE_URL}/api/admin/chatbot-sheets/${sheetId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMessage({ text: res.data.message, type: 'success' });
+      fetchCustomSheets();
+    } catch (err) {
+      setMessage({ text: err.response?.data?.error || 'Xóa thất bại.', type: 'error' });
+    }
+  };
+
   useEffect(() => {
     let active = true;
     Promise.resolve().then(() => {
       if (active) {
         fetchAccounts();
+        fetchCustomSheets();
       }
     });
     return () => {
@@ -303,6 +373,154 @@ export default function AdminPanel({ employees, token }) {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* Custom Sheets Config Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
+        
+        {/* Left column: Add new sheet source */}
+        <div className="glass-card rounded-3xl p-6 lg:col-span-5 flex flex-col justify-between shadow-md h-fit">
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <Database className="text-sky-600" size={22} />
+              Cấu hình Dữ liệu Chatbot AI
+            </h3>
+            <p className="text-xs text-slate-400">Thêm bất kỳ trang tính nào (Google Sheet) làm cơ sở tri thức cho Chatbot của cả phòng.</p>
+          </div>
+
+          <form onSubmit={handleAddSheet} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-650 mb-1.5 pl-1">Tên tài liệu / Tên bảng</label>
+              <input
+                type="text"
+                placeholder="Ví dụ: Quy chế cấp nhãn sản xuất"
+                value={sheetTitle}
+                onChange={(e) => setSheetTitle(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-sky-400 focus:bg-white transition-all duration-200 text-sm font-semibold"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-655 mb-1.5 pl-1">Link CSV Google Sheets (Publish to Web)</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
+                  <Link2 size={16} />
+                </span>
+                <input
+                  type="url"
+                  placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?gid=...&output=csv"
+                  value={sheetUrl}
+                  onChange={(e) => setSheetUrl(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 outline-none focus:border-sky-400 focus:bg-white transition-all duration-200 text-xs font-semibold"
+                  required
+                />
+              </div>
+              <p className="text-xxs text-slate-400 mt-1 pl-1 italic">
+                *Hướng dẫn: Vào Sheet {'->'} Tệp {'->'} Chia sẻ {'->'} Xuất bản lên web {'->'} Chọn trang tính {'->'} Chọn định dạng CSV {'->'} Sao chép link.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-655 mb-1.5 pl-1">Phân quyền bảo mật dữ liệu</label>
+              <select
+                value={sheetSecurity}
+                onChange={(e) => {
+                  setSheetSecurity(e.target.value);
+                  if (e.target.value !== 'role-filtered') setSheetFilterColumn('');
+                }}
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-sky-400 focus:bg-white transition-all duration-200 text-sm font-semibold"
+              >
+                <option value="public">Công khai (Tất cả nhân viên được hỏi)</option>
+                <option value="private">Bảo mật (Chỉ Admin được hỏi)</option>
+                <option value="role-filtered">Lọc bảo mật theo tên nhân sự</option>
+              </select>
+            </div>
+
+            {sheetSecurity === 'role-filtered' && (
+              <div className="animate-scale-in">
+                <label className="block text-xs font-bold text-slate-655 mb-1.5 pl-1">Tên cột lọc Phụ trách (Viết chính xác cột trong Sheet)</label>
+                <input
+                  type="text"
+                  placeholder="Ví dụ: Phụ trách, Người làm, hoặc Nhân sự"
+                  value={sheetFilterColumn}
+                  onChange={(e) => setSheetFilterColumn(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-sky-400 focus:bg-white transition-all duration-200 text-sm font-semibold"
+                  required
+                />
+                <p className="text-xxs text-slate-400 mt-1 pl-1">
+                  Hệ thống tự động lọc dòng: chỉ nạp dòng có cột này chứa tên của nhân viên đang chat.
+                </p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={sheetLoading || !sheetTitle || !sheetUrl}
+              className="w-full py-3.5 bg-gradient-to-r from-sky-500 to-blue-600 text-white font-bold rounded-2xl hover:from-sky-655 hover:to-blue-700 active:scale-[0.98] transition-all duration-150 shadow-lg shadow-sky-100 disabled:opacity-50 text-xs mt-2 flex items-center justify-center gap-2"
+            >
+              {sheetLoading ? (
+                <>
+                  <Loader2 className="animate-spin" size={16} />
+                  <span>Đang cấu hình & nạp dữ liệu...</span>
+                </>
+              ) : (
+                <>
+                  <Database size={16} />
+                  <span>Kết nối nguồn dữ liệu</span>
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Right column: List of custom sheets */}
+        <div className="glass-card rounded-3xl p-6 lg:col-span-7 flex flex-col shadow-md h-fit">
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              <ShieldCheck className="text-slate-700" size={22} />
+              Nguồn dữ liệu bổ sung đã kết nối
+            </h3>
+            <p className="text-xs text-slate-400">Các nguồn dữ liệu đang đồng bộ thời gian thực vào Chatbot AI.</p>
+          </div>
+
+          <div className="overflow-y-auto max-h-[350px] pr-1">
+            {customSheets.length === 0 ? (
+              <div className="text-center py-12 text-slate-400 font-semibold bg-slate-50/40 rounded-2xl border border-dashed border-slate-200">
+                Chưa có dữ liệu bổ sung nào ngoài hồ sơ gốc.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {customSheets.map((sh) => (
+                  <div key={sh.id} className="p-4 bg-slate-50/60 rounded-2xl border border-slate-200/50 flex items-center justify-between gap-4 hover:bg-slate-50 transition-colors">
+                    <div className="min-w-0">
+                      <h4 className="font-bold text-slate-800 text-sm truncate">{sh.title}</h4>
+                      <p className="text-xxs text-slate-450 truncate mt-0.5">{sh.url}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className={`px-2 py-0.5 rounded-md text-xxs font-bold uppercase tracking-wider ${
+                          sh.security === 'public' ? 'bg-emerald-100 text-emerald-700' :
+                          sh.security === 'private' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {sh.security === 'public' ? 'Công khai' :
+                           sh.security === 'private' ? 'Chỉ Admin' : `Lọc theo: "${sh.filterColumn}"`}
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSheet(sh.id)}
+                      className="p-2 text-red-500 hover:text-red-750 hover:bg-red-100/40 rounded-xl transition-all active:scale-90 shrink-0"
+                      title="Xóa nguồn dữ liệu"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>

@@ -341,6 +341,7 @@ export default function App() {
 
       </div>
       <CatMascot />
+      <ChatAssistantWidget />
     </div>
   );
 }
