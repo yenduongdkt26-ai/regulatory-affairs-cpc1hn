@@ -1532,6 +1532,16 @@ async function getAvailableGeminiModel(genAI) {
     );
     
     if (candidates.length > 0) {
+      // Sort candidates to prioritize newer flash models for speed (2.5-flash -> 2.0-flash -> 1.5-flash)
+      candidates.sort((a, b) => {
+        const getScore = (name) => {
+          if (name.includes('gemini-2.5-flash')) return 3;
+          if (name.includes('gemini-2.0-flash')) return 2;
+          if (name.includes('gemini-1.5-flash')) return 1;
+          return 0;
+        };
+        return getScore(b.name) - getScore(a.name);
+      });
       selectedGeminiModel = candidates[0].name.replace('models/', '');
       console.log(`Auto-selected Gemini model: ${selectedGeminiModel}`);
       return selectedGeminiModel;
@@ -1713,7 +1723,8 @@ HƯỚNG DẪN TRẢ LỜI NGHIÊM NGẶT (RẤT QUAN TRỌNG):
 1. Bạn chỉ được trả lời dựa hoàn toàn trên Dữ liệu hồ sơ và Dữ liệu quy trình phụ trợ được cung cấp ở trên. Bạn tuyệt đối KHÔNG ĐƯỢC tự bịa đặt, suy đoán hoặc tự vẽ ra bất kỳ thông tin nào không xuất hiện trong dữ liệu được cung cấp.
 2. Nếu câu hỏi của người dùng yêu cầu thông tin về sản phẩm, trạng thái hoặc bất kỳ dữ liệu nào KHÔNG TỒN TẠI hoặc KHÔNG TÌM THẤY trong ngữ cảnh dữ liệu được cung cấp ở trên, bạn BẮT BUỘC phải trả lời nguyên văn câu sau và KHÔNG ĐƯỢC giải thích gì thêm:
 "Hiện tại hệ thống không có thông tin về nội dung này."
-3. Trả lời một cách rõ ràng, ngắn gọn, chuyên nghiệp bằng tiếng Việt. Định dạng câu trả lời đẹp mắt bằng Markdown.`;
+3. Trả lời một cách rõ ràng, ngắn gọn, chuyên nghiệp bằng tiếng Việt. Định dạng câu trả lời đẹp mắt bằng Markdown.
+4. QUY TẮC PHÂN BỔ HỒ SƠ MỚI: Khi người dùng hỏi cần phân thêm hồ sơ mới cho ai (hoặc ai nên nhận thêm việc), bạn bắt buộc phải tìm trong dữ liệu người đang phụ trách ít hồ sơ nhất (tổng số hồ sơ đang phụ trách là ít nhất). Tuyệt đối KHÔNG gợi ý phân việc cho người đang có nhiều hồ sơ quá hạn hoặc sắp đến hạn nhất.`;
 
         const modelName = await getAvailableGeminiModel(genAI);
         const model = genAI.getGenerativeModel({ 
