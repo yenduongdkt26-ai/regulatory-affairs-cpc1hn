@@ -520,13 +520,25 @@ async function fetchAndAggregate() {
     const matched = getMatchedEmployees(row[0]);
     if (matched.length === 0) continue;
 
+    const deadline = row[6] ? parseDeadline(row[6]) : null;
+    const daysDiff = deadline ? getDaysDiff(deadline, refDate) : null;
+    let alarmStatus = null;
+    if (daysDiff !== null) {
+      if (daysDiff < 0) alarmStatus = 'overdue';
+      else if (daysDiff <= 30) alarmStatus = '1m';
+      else if (daysDiff <= 60) alarmStatus = '2m';
+    }
+
     hstdData.push({
       inCharge: matched,
       productName: row[1].trim(),
       classification: row[2] ? row[2].trim() : "",
       content: row[3] ? row[3].trim() : "",
       status: row[4] ? row[4].trim() : "",
-      explanation: row[5] ? row[5].trim() : ""
+      explanation: row[5] ? row[5].trim() : "",
+      deadline: row[6] ? row[6].trim() : "",
+      daysDiff,
+      alarmStatus
     });
   }
 
@@ -707,8 +719,8 @@ async function fetchAndAggregate() {
     nearDeadline2m: []
   };
 
-  // Supplement & Extension have deadlines
-  [...hsbsData, ...hsghData].forEach(record => {
+  // Supplement, Extension & Variations (HSTĐ) have deadlines
+  [...hsbsData, ...hsghData, ...hstdData].forEach(record => {
     if (record.alarmStatus === 'overdue') {
       domesticKPIs.overdue.push(record);
     } else if (record.alarmStatus === '1m') {

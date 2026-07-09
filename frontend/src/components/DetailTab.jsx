@@ -33,7 +33,7 @@ export default function DetailTab({ sheetType, sheetName, employees, sheetData, 
       case 'hsm':
         return ["Phân loại", "Tên Thuốc", "Dạng bào chế", "Hoạt chất, hàm lượng", "Tình trạng"];
       case 'hstd':
-        return ["Tên Thuốc", "Phân loại", "Nội dung xin thay đổi", "Tình trạng", "Giải trình"];
+        return ["Tên Thuốc", "Phân loại", "Nội dung xin thay đổi", "Tình trạng", "Giải trình", "Hạn hoàn thành", "Cảnh báo"];
       default:
         return [];
     }
@@ -95,7 +95,9 @@ export default function DetailTab({ sheetType, sheetName, employees, sheetData, 
             item.classification || '—',
             item.content || '—',
             item.status || '—',
-            item.explanation || '—'
+            item.explanation || '—',
+            item.deadline || '—',
+            alertText
           ];
         default:
           return [];
@@ -114,7 +116,7 @@ export default function DetailTab({ sheetType, sheetName, employees, sheetData, 
   };
 
   // Determine if this sheet has deadlines
-  const hasDeadline = ['hsxk', 'ndk', 'nsx', 'hsbs', 'hsgh'].includes(sheetType);
+  const hasDeadline = ['hsxk', 'ndk', 'nsx', 'hsbs', 'hsgh', 'hstd'].includes(sheetType);
 
   // Group and count files per employee in this sheet
   // Filter sheetData based on user role (non-admin can only see files they are in charge of)
@@ -298,6 +300,8 @@ export default function DetailTab({ sheetType, sheetName, employees, sheetData, 
             <th className="pb-3">Nội dung xin thay đổi</th>
             <th className="pb-3">Tình trạng</th>
             <th className="pb-3">Giải trình</th>
+            <th className="pb-3">Hạn hoàn thành</th>
+            <th className="pb-3">Cảnh báo</th>
           </tr>
         );
       default:
@@ -399,7 +403,18 @@ export default function DetailTab({ sheetType, sheetName, employees, sheetData, 
             <td className="py-3.5 text-xs text-slate-500 font-semibold">{item.classification || '—'}</td>
             <td className="py-3.5 text-slate-600 text-sm max-w-xs pr-4">{item.content || '—'}</td>
             <td className="py-3.5 text-xs text-amber-600 font-bold whitespace-nowrap">{item.status || '—'}</td>
-            <td className="py-3.5 text-xs text-slate-400 max-w-xs" title={item.explanation}>{item.explanation || '—'}</td>
+            <td className="py-3.5 text-xs text-slate-400 max-w-xs pr-4" title={item.explanation}>{item.explanation || '—'}</td>
+            <td className="py-3.5 text-xs font-semibold text-slate-700 whitespace-nowrap">{item.deadline || '—'}</td>
+            <td className="py-3.5 text-xs font-bold whitespace-nowrap">
+              {days !== null ? (
+                <span className={`px-2 py-0.5 rounded-md ${
+                  days < 0 ? 'bg-red-100 text-red-700' :
+                  days <= 30 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'
+                }`}>
+                  {days < 0 ? `Quá hạn ${Math.abs(days)} ngày` : `Còn ${days} ngày`}
+                </span>
+              ) : '—'}
+            </td>
           </tr>
         );
       default:
