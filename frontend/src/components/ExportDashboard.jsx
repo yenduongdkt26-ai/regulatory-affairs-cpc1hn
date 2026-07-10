@@ -53,8 +53,8 @@ export default function ExportDashboard({ data }) {
   const activeChartData = sortedActive;
   const grantedChartData = sortedGranted;
 
-  // Slightly lighter, vibrant colors for bar charts to enhance readability without being too dark
-  const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#fb7185', '#a78bfa', '#f472b6', '#fb923c', '#2dd4bf'];
+  // Soft semi-pastel colors (Tailwind 300-series) to keep charts clean, light, and easy to distinguish
+  const COLORS = ['#7dd3fc', '#6ee7b7', '#fcd34d', '#fda4af', '#c4b5fd', '#fdba74', '#5eead4', '#a5b4fc'];
 
   // Calculate top 3 employees with the most overdue dossiers
   const overdueCounts = {};
