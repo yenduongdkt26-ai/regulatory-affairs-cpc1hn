@@ -13,6 +13,7 @@ import ChatAssistantWidget from './components/ChatAssistantWidget';
 import LegalLibrary from './components/LegalLibrary';
 import RegulatoryChatbot from './components/RegulatoryChatbot';
 import MonthlyKPIs from './components/MonthlyKPIs';
+import NotificationCenter from './components/NotificationCenter';
 import { Menu, RefreshCw, Clock, AlertTriangle, CalendarClock } from 'lucide-react';
 
 export default function App() {
@@ -322,6 +323,7 @@ export default function App() {
                 <span className="hidden md:inline">Không thể đồng bộ dữ liệu mới</span>
               </div>
             )}
+            {token && <NotificationCenter token={token} />}
             <button
               onClick={() => fetchData(true)}
               disabled={refreshing}

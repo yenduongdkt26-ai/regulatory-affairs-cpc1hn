@@ -1462,6 +1462,56 @@ app.delete('/api/admin/chatbot-sheets/:id', authenticateToken, requireAdmin, (re
   }
 });
 
+// Notifications API: GET user notifications
+app.get('/api/notifications', authenticateToken, (req, res) => {
+  try {
+    const notifs = readNotifications();
+    const userNotifs = notifs.filter(n => n.username === req.user.username);
+    res.json(userNotifs.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)));
+  } catch (err) {
+    res.status(500).json({ error: "Lỗi hệ thống khi lấy thông báo." });
+  }
+});
+
+// Notifications API: Mark notification(s) as read
+app.post('/api/notifications/read', authenticateToken, (req, res) => {
+  const { id } = req.body;
+  try {
+    const notifs = readNotifications();
+    notifs.forEach(n => {
+      if (n.username === req.user.username && (id ? n.id === id : true)) {
+        n.isRead = true;
+      }
+    });
+    writeNotifications(notifs);
+    res.json({ message: "Đã đánh dấu đã đọc thành công!" });
+  } catch (err) {
+    res.status(500).json({ error: "Lỗi hệ thống khi cập nhật thông báo." });
+  }
+});
+
+// Viber API: GET Viber configuration (Admin only)
+app.get('/api/viber-config', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    res.json(readViberConfig());
+  } catch (err) {
+    res.status(500).json({ error: "Lỗi khi lấy cấu hình Viber." });
+  }
+});
+
+// Viber API: POST Viber configuration (Admin only)
+app.post('/api/viber-config', authenticateToken, requireAdmin, (req, res) => {
+  const { viberBotToken, mappings } = req.body;
+  try {
+    const config = { viberBotToken: viberBotToken || "", mappings: mappings || [] };
+    writeViberConfig(config);
+    res.json({ message: "Lưu cấu hình Viber thành công!" });
+  } catch (err) {
+    res.status(500).json({ error: "Lỗi khi lưu cấu hình Viber." });
+  }
+});
+
+
 // Helper: serialize dossier data to plain text format for AI prompt
 function serializeDossierDataForAI(resultData) {
   let context = "";
@@ -2014,6 +2064,104 @@ function writeKpis(kpis) {
   }
 }
 
+// Notifications and Viber config helpers
+const notificationsDbPath = path.join(DATA_DIR, 'notifications.json');
+function readNotifications() {
+  try {
+    if (!fs.existsSync(notificationsDbPath)) {
+      fs.writeFileSync(notificationsDbPath, JSON.stringify([], null, 2));
+    }
+    return JSON.parse(fs.readFileSync(notificationsDbPath, 'utf8'));
+  } catch (err) {
+    console.error("Error reading notifications:", err);
+    return [];
+  }
+}
+function writeNotifications(notifs) {
+  try {
+    fs.writeFileSync(notificationsDbPath, JSON.stringify(notifs, null, 2));
+  } catch (err) {
+    console.error("Error writing notifications:", err);
+  }
+}
+
+function addNotification(username, employeeName, message, type) {
+  const notifs = readNotifications();
+  const newNotif = {
+    id: 'notif_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+    username,
+    employeeName,
+    message,
+    type, // 'success', 'error', 'info'
+    isRead: false,
+    createdAt: new Date().toISOString()
+  };
+  notifs.push(newNotif);
+  writeNotifications(notifs);
+
+  // Send Viber message asynchronously
+  sendViberNotification(employeeName, message).catch(err => {
+    console.error("Async Viber send failed:", err);
+  });
+}
+
+const viberConfigPath = path.join(DATA_DIR, 'viber_config.json');
+function readViberConfig() {
+  try {
+    if (!fs.existsSync(viberConfigPath)) {
+      fs.writeFileSync(viberConfigPath, JSON.stringify({ viberBotToken: "", mappings: [] }, null, 2));
+    }
+    return JSON.parse(fs.readFileSync(viberConfigPath, 'utf8'));
+  } catch (err) {
+    console.error("Error reading Viber config:", err);
+    return { viberBotToken: "", mappings: [] };
+  }
+}
+function writeViberConfig(config) {
+  try {
+    fs.writeFileSync(viberConfigPath, JSON.stringify(config, null, 2));
+  } catch (err) {
+    console.error("Error writing Viber config:", err);
+  }
+}
+
+async function sendViberNotification(employeeName, message) {
+  const config = readViberConfig();
+  const token = process.env.VIBER_BOT_TOKEN || config.viberBotToken;
+  if (!token) {
+    console.log(`[Viber Notify Bypass] No Viber Bot Token configured. Cannot notify ${employeeName}.`);
+    return;
+  }
+  
+  const userMap = config.mappings.find(m => m.employeeName === employeeName);
+  if (!userMap || !userMap.viberId) {
+    console.log(`[Viber Notify Bypass] No Viber ID mapped for employee: ${employeeName}.`);
+    return;
+  }
+  
+  try {
+    const viberUrl = 'https://chatapi.viber.com/pa/send_message';
+    await axios.post(viberUrl, {
+      receiver: userMap.viberId,
+      min_api_version: 1,
+      sender: {
+        name: "RA CPC1HN Bot"
+      },
+      type: "text",
+      text: message
+    }, {
+      headers: {
+        'X-Viber-Auth-Token': token,
+        'Content-Type': 'application/json'
+      }
+    });
+    console.log(`[Viber Notify Success] Sent message to ${employeeName} via Viber.`);
+  } catch (err) {
+    console.error(`[Viber Notify Error] Failed to notify ${employeeName}:`, err.response?.data || err.message);
+  }
+}
+
+
 // Get all KPI records
 app.get('/api/kpi/records', authenticateToken, (req, res) => {
   try {
@@ -2143,6 +2291,12 @@ app.post('/api/kpi/plan/approve', authenticateToken, requireAdmin, (req, res) =>
     record.planApprovedAt = new Date().toISOString();
     record.planComment = comment || '';
 
+    // Add real-time & Viber notification
+    const msg = approve 
+      ? `Kế hoạch KPI tháng ${record.month} của bạn đã được phê duyệt! 🎉`
+      : `Kế hoạch KPI tháng ${record.month} của bạn đã bị từ chối. Lý do: ${comment || 'Không có lý do chi tiết.'}`;
+    addNotification(record.username, record.employeeName, msg, approve ? 'success' : 'error');
+
     writeKpis(kpis);
     res.json({ message: approve ? "Phê duyệt kế hoạch thành công!" : "Từ chối kế hoạch thành công!", record });
   } catch (err) {
@@ -2230,6 +2384,12 @@ app.post('/api/kpi/report/approve', authenticateToken, requireAdmin, (req, res) 
     record.reportApprovedBy = req.user.employeeName;
     record.reportApprovedAt = new Date().toISOString();
     record.reportComment = comment || '';
+
+    // Add real-time & Viber notification
+    const msg = approve 
+      ? `Báo cáo KPI tháng ${record.month} của bạn đã được phê duyệt! 🎉`
+      : `Báo cáo KPI tháng ${record.month} của bạn đã bị từ chối. Lý do: ${comment || 'Không có lý do chi tiết.'}`;
+    addNotification(record.username, record.employeeName, msg, approve ? 'success' : 'error');
 
     writeKpis(kpis);
     res.json({ message: approve ? "Phê duyệt báo cáo thành công!" : "Từ chối báo cáo thành công!", record });
