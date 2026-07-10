@@ -15,7 +15,7 @@ const MOTIVATIONAL_QUOTES = [
   "Nụ cười của bạn là động lực làm việc của cả phòng đó! 😊"
 ];
 
-const CAT_STATES = ['sleeping', 'stretching', 'licking'];
+const CAT_STATES = ['sleeping', 'stretching', 'licking', 'lying_back', 'lying_side', 'jumping'];
 
 export default function CatWidget() {
   const [catState, setCatState] = useState('sleeping'); // 'sleeping', 'stretching', 'licking'
@@ -118,6 +118,13 @@ export default function CatWidget() {
         .zzz-2 {
           animation: zzz-float-2 3s ease-in-out infinite;
           animation-delay: 1.5s;
+        }
+        @keyframes cat-jump {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-5px) scaleY(1.05); }
+        }
+        .animate-cat-jump {
+          animation: cat-jump 0.8s ease-in-out infinite;
         }
       `}</style>
 
@@ -242,6 +249,105 @@ export default function CatWidget() {
           </svg>
         )}
 
+        {catState === 'lying_back' && (
+          <svg viewBox="0 0 100 100" className="w-10 h-10">
+            {/* Body lying down (vertical oval) */}
+            <ellipse cx="50" cy="55" rx="18" ry="26" fill="#f97316" />
+            {/* Stripes */}
+            <path d="M42 50 L48 50" stroke="#ea580c" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M58 50 L52 50" stroke="#ea580c" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M40 60 L48 60" stroke="#ea580c" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M60 60 L52 60" stroke="#ea580c" strokeWidth="2.5" strokeLinecap="round" />
+            {/* White belly */}
+            <ellipse cx="50" cy="58" rx="11" ry="16" fill="#ffedd5" />
+            {/* Head */}
+            <circle cx="50" cy="24" r="15" fill="#f97316" />
+            {/* Ears */}
+            <polygon points="36,15 39,2 47,13" fill="#f97316" />
+            <polygon points="53,13 61,2 64,15" fill="#f97316" />
+            {/* Happy Eyes */}
+            <path d="M42 24 Q45 27 48 24" stroke="#7c2d12" strokeWidth="2" fill="none" strokeLinecap="round" />
+            <path d="M52 24 Q55 27 58 24" stroke="#7c2d12" strokeWidth="2" fill="none" strokeLinecap="round" />
+            {/* Nose */}
+            <polygon points="50,28 48,26 52,26" fill="#fda4af" />
+            {/* Smile */}
+            <path d="M47 30 Q50 32 53 30" stroke="#7c2d12" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+            {/* Wiggling paws pointing up */}
+            <g className="animate-cat-lick" style={{ transformOrigin: '50px 55px' }}>
+              {/* Front paws */}
+              <circle cx="38" cy="42" r="5" fill="#f97316" />
+              <circle cx="62" cy="42" r="5" fill="#f97316" />
+              {/* Back paws */}
+              <circle cx="36" cy="72" r="5.5" fill="#f97316" />
+              <circle cx="64" cy="72" r="5.5" fill="#f97316" />
+              {/* Pink pads */}
+              <circle cx="36" cy="72" r="2.5" fill="#fca5a5" />
+              <circle cx="64" cy="72" r="2.5" fill="#fca5a5" />
+            </g>
+            {/* Tail wagging underneath */}
+            <path d="M50 81 C40 92 60 92 50 95" stroke="#f97316" strokeWidth="4.5" strokeLinecap="round" fill="none" className="animate-cat-tail" style={{ transformOrigin: '50px 81px' }} />
+          </svg>
+        )}
+
+        {catState === 'lying_side' && (
+          <svg viewBox="0 0 100 100" className="w-10 h-10 animate-cat-breath">
+            {/* Body on side */}
+            <ellipse cx="45" cy="60" rx="30" ry="20" fill="#f97316" />
+            {/* Stripes */}
+            <path d="M30 48 Q35 55 30 62" stroke="#ea580c" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+            <path d="M45 45 Q48 52 45 59" stroke="#ea580c" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+            {/* Head on the side */}
+            <circle cx="70" cy="54" r="15" fill="#f97316" />
+            {/* Ears */}
+            <polygon points="62,41 68,28 72,39" fill="#f97316" />
+            <polygon points="72,39 80,28 82,41" fill="#f97316" />
+            {/* Closed Eyes */}
+            <path d="M64 54 Q67 56 70 54" stroke="#7c2d12" strokeWidth="2" fill="none" strokeLinecap="round" />
+            <path d="M72 54 Q75 56 78 54" stroke="#7c2d12" strokeWidth="2" fill="none" strokeLinecap="round" />
+            {/* Nose */}
+            <polygon points="71,58 69,56 73,56" fill="#fda4af" />
+            {/* Smile */}
+            <path d="M69 60 Q71 61 73 60" stroke="#7c2d12" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+            {/* Paws on side */}
+            <ellipse cx="40" cy="78" rx="6" ry="4" fill="#f97316" />
+            <ellipse cx="54" cy="78" rx="6" ry="4" fill="#f97316" />
+            {/* Tail lying down and waving */}
+            <path d="M18 64 C8 68 12 52 22 56" stroke="#f97316" strokeWidth="6" strokeLinecap="round" fill="none" className="animate-cat-tail" style={{ transformOrigin: '18px 64px' }} />
+          </svg>
+        )}
+
+        {catState === 'jumping' && (
+          <svg viewBox="0 0 100 100" className="w-10 h-10 animate-cat-jump">
+            {/* Standing body */}
+            <ellipse cx="50" cy="58" rx="16" ry="24" fill="#f97316" />
+            {/* White belly */}
+            <circle cx="50" cy="62" r="11" fill="#ffedd5" />
+            {/* Stripes */}
+            <path d="M38 52 L43 52" stroke="#ea580c" strokeWidth="2.5" strokeLinecap="round" />
+            <path d="M62 52 L57 52" stroke="#ea580c" strokeWidth="2.5" strokeLinecap="round" />
+            {/* Head */}
+            <circle cx="50" cy="30" r="16" fill="#f97316" />
+            {/* Ears */}
+            <polygon points="35,20 38,5 47,18" fill="#f97316" />
+            <polygon points="53,18 62,5 65,20" fill="#f97316" />
+            {/* Happy Eyes */}
+            <path d="M41 29 Q44 26 47 29" stroke="#7c2d12" strokeWidth="2" fill="none" strokeLinecap="round" />
+            <path d="M53 29 Q56 26 59 29" stroke="#7c2d12" strokeWidth="2" fill="none" strokeLinecap="round" />
+            {/* Open Mouth/Smile */}
+            <polygon points="50,33 48,31 52,31" fill="#fda4af" />
+            <path d="M47 35 Q50 39 53 35 Z" fill="#ef4444" stroke="#7c2d12" strokeWidth="1" />
+            {/* Front paws raised high (celebrating!) */}
+            <g className="animate-cat-lick" style={{ transformOrigin: '50px 58px' }}>
+              <ellipse cx="32" cy="38" rx="5" ry="10" fill="#f97316" transform="rotate(-30 32 38)" />
+              <ellipse cx="68" cy="38" rx="5" ry="10" fill="#f97316" transform="rotate(30 68 38)" />
+            </g>
+            {/* Dancing back legs */}
+            <ellipse cx="44" cy="80" rx="5" ry="8" fill="#f97316" />
+            <ellipse cx="56" cy="80" rx="5" ry="8" fill="#f97316" />
+            {/* Waving tail */}
+            <path d="M64 70 C76 70 80 50 72 40" stroke="#f97316" strokeWidth="5" strokeLinecap="round" fill="none" className="animate-cat-tail" style={{ transformOrigin: '64px 70px' }} />
+          </svg>
+        )}
       </div>
     </div>
   );
