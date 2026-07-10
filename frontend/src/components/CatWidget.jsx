@@ -15,7 +15,7 @@ const MOTIVATIONAL_QUOTES = [
   "Nụ cười của bạn là động lực làm việc của cả phòng đó! 😊"
 ];
 
-const CAT_STATES = ['sleeping', 'stretching', 'licking', 'lying_back', 'lying_side', 'jumping'];
+const CAT_STATES = ['sleeping', 'stretching', 'licking', 'lying_back', 'lying_side', 'jumping', 'licking_butt', 'working', 'in_box'];
 
 export default function CatWidget() {
   const [catState, setCatState] = useState('sleeping'); // 'sleeping', 'stretching', 'licking'
@@ -396,6 +396,125 @@ export default function CatWidget() {
             <ellipse cx="56" cy="80" rx="5" ry="8" fill="#f97316" />
             {/* Waving tail */}
             <path d="M64 70 C76 70 80 50 72 40" stroke="#f97316" strokeWidth="5" strokeLinecap="round" fill="none" className="animate-cat-tail" style={{ transformOrigin: '64px 70px' }} />
+          </svg>
+        )}
+
+        {catState === 'licking_butt' && (
+          <svg viewBox="0 0 100 100" className="w-14 h-14">
+            {/* Body */}
+            <ellipse cx="45" cy="65" rx="26" ry="18" fill="#f97316" />
+            {/* Stripes */}
+            <path d="M32 54 Q35 60 32 66" stroke="#ea580c" strokeWidth="2.5" fill="none" />
+            {/* Raised hind leg ("chicken leg" pose!) */}
+            <g className="animate-cat-lick" style={{ transformOrigin: '25px 65px' }}>
+              <ellipse cx="25" cy="42" rx="6" ry="16" fill="#f97316" transform="rotate(-15 25 42)" />
+              <circle cx="23" cy="28" r="5" fill="#fca5a5" />
+            </g>
+            {/* Front paws on ground */}
+            <ellipse cx="60" cy="78" rx="6" ry="4" fill="#f97316" />
+            {/* Head bent back licking butt */}
+            <g className="animate-cat-breath" style={{ transformOrigin: '50px 65px' }}>
+              <circle cx="62" cy="54" r="15" fill="#f97316" />
+              {/* Ears */}
+              <polygon points="56,41 60,28 66,39" fill="#f97316" />
+              <polygon points="68,39 76,28 78,41" fill="#f97316" />
+              {/* Closed happy eyes */}
+              <path d="M57 54 Q60 56 63 54" stroke="#7c2d12" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              <path d="M67 54 Q70 56 73 54" stroke="#7c2d12" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+              {/* Blush cheeks */}
+              <circle cx="56" cy="57" r="2" fill="#fda4af" opacity="0.9" />
+              <circle cx="74" cy="57" r="2" fill="#fda4af" opacity="0.9" />
+              {/* Tongue / Lick */}
+              <path d="M53 62 Q48 64 51 68" stroke="#ef4444" strokeWidth="2" fill="#fca5a5" />
+              {/* Nose/Mouth */}
+              <polygon points="62,58 60,56 64,56" fill="#fda4af" />
+              {/* Whiskers */}
+              <path d="M53 56 H48" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M72 56 H77" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round" />
+            </g>
+            {/* Tail */}
+            <path d="M18 70 C8 72 12 55 16 50" stroke="#f97316" strokeWidth="5.5" strokeLinecap="round" fill="none" />
+          </svg>
+        )}
+
+        {catState === 'working' && (
+          <svg viewBox="0 0 100 100" className="w-14 h-14">
+            {/* Sitting body */}
+            <ellipse cx="50" cy="65" rx="20" ry="24" fill="#f97316" />
+            {/* Head */}
+            <circle cx="50" cy="35" r="16" fill="#f97316" />
+            {/* Ears */}
+            <polygon points="36,26 39,12 48,23" fill="#f97316" />
+            <polygon points="52,23 61,12 64,26" fill="#f97316" />
+            {/* Eyes behind glasses */}
+            <circle cx="43" cy="35" r="4.5" stroke="#1e293b" strokeWidth="1.5" fill="none" />
+            <circle cx="57" cy="35" r="4.5" stroke="#1e293b" strokeWidth="1.5" fill="none" />
+            <line x1="47.5" y1="35" x2="52.5" y2="35" stroke="#1e293b" strokeWidth="1.5" />
+            {/* Focused eyes */}
+            <circle cx="43" cy="35" r="1" fill="#7c2d12" />
+            <circle cx="57" cy="35" r="1" fill="#7c2d12" />
+            {/* Blush cheeks */}
+            <circle cx="38" cy="39" r="2" fill="#fda4af" opacity="0.9" />
+            <circle cx="62" cy="39" r="2" fill="#fda4af" opacity="0.9" />
+            {/* Nose/Smile */}
+            <polygon points="50,38 48,36 52,36" fill="#fda4af" />
+            <path d="M47 40 Q50 42 53 40" stroke="#7c2d12" strokeWidth="1.5" fill="none" />
+            {/* Whiskers */}
+            <path d="M33 37 H28" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round" />
+            <path d="M67 37 H72" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round" />
+            
+            {/* Tiny Gray Laptop in front */}
+            <rect x="34" y="65" width="32" height="18" rx="2" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="1" />
+            <line x1="38" y1="78" x2="62" y2="78" stroke="#64748b" strokeWidth="1.5" />
+            <polygon points="34,65 24,52 76,52 66,65" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1" />
+            {/* Glowing screen content (RA code lines) */}
+            <rect x="30" y="54" width="40" height="9" fill="#38bdf8" opacity="0.15" />
+            <line x1="32" y1="56" x2="48" y2="56" stroke="#0ea5e9" strokeWidth="1" />
+            <line x1="32" y1="59" x2="60" y2="59" stroke="#10b981" strokeWidth="1" />
+            
+            {/* Typing paws */}
+            <g className="animate-cat-lick">
+              <ellipse cx="40" cy="62" rx="4" ry="7" fill="#f97316" />
+              <ellipse cx="60" cy="62" rx="4" ry="7" fill="#f97316" />
+            </g>
+            {/* Tail waving */}
+            <path d="M66 78 C76 78 80 55 74 50" stroke="#f97316" strokeWidth="5.5" strokeLinecap="round" fill="none" className="animate-cat-tail" style={{ transformOrigin: '66px 78px' }} />
+          </svg>
+        )}
+
+        {catState === 'in_box' && (
+          <svg viewBox="0 0 100 100" className="w-14 h-14">
+            {/* Cardboard box */}
+            <rect x="25" y="55" width="50" height="30" fill="#d97706" rx="2" stroke="#b45309" strokeWidth="1" />
+            {/* Flaps opened */}
+            <polygon points="25,55 12,45 25,45" fill="#f59e0b" stroke="#b45309" strokeWidth="1" />
+            <polygon points="75,55 88,45 75,45" fill="#f59e0b" stroke="#b45309" strokeWidth="1" />
+            {/* Cat Head peeking out */}
+            <g className="animate-cat-breath" style={{ transformOrigin: '50px 50px' }}>
+              <circle cx="50" cy="42" r="16" fill="#f97316" />
+              {/* Ears */}
+              <polygon points="36,32 39,18 47,29" fill="#f97316" />
+              <polygon points="38,30 40,21 45,28" fill="#fda4af" />
+              <polygon points="53,29 61,18 64,32" fill="#f97316" />
+              <polygon points="55,28 60,21 62,30" fill="#fda4af" />
+              {/* Big curious eyes */}
+              <circle cx="43" cy="40" r="3" fill="#7c2d12" />
+              <circle cx="57" cy="40" r="3" fill="#7c2d12" />
+              <circle cx="42.5" cy="38.5" r="1" fill="#ffffff" />
+              <circle cx="56.5" cy="38.5" r="1" fill="#ffffff" />
+              {/* Blush cheeks */}
+              <circle cx="39" cy="44" r="2" fill="#fda4af" opacity="0.9" />
+              <circle cx="61" cy="44" r="2" fill="#fda4af" opacity="0.9" />
+              {/* Nose/Smile */}
+              <polygon points="50,43 48,41 52,41" fill="#fda4af" />
+              <path d="M47 45 Q50 47 53 45" stroke="#7c2d12" strokeWidth="1.5" fill="none" />
+              {/* Whiskers */}
+              <path d="M33 42 H28" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round" />
+              <path d="M67 42 H72" stroke="#ea580c" strokeWidth="1.5" strokeLinecap="round" />
+              {/* Paws resting on edge */}
+              <ellipse cx="40" cy="56" rx="5" ry="4" fill="#f97316" />
+              <ellipse cx="60" cy="56" rx="5" ry="4" fill="#f97316" />
+            </g>
           </svg>
         )}
       </div>
