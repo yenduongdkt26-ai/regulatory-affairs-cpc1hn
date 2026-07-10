@@ -4,7 +4,7 @@ import { API_BASE_URL } from '../config';
 import { 
   ClipboardList, Plus, Trash2, CheckCircle2, XCircle, AlertCircle, 
   Hourglass, Check, Calendar, TrendingUp, Users, User, ArrowRight,
-  HelpCircle, MessageSquare, ChevronDown, ChevronRight
+  HelpCircle, MessageSquare, ChevronDown, ChevronRight, FileSpreadsheet, FileText
 } from 'lucide-react';
 import { 
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, 
@@ -313,6 +313,11 @@ export default function MonthlyKPIs() {
 
   const submitPlan = async (e, isDraft = false) => {
     if (e) e.preventDefault();
+    if (!isDraft) {
+      if (!window.confirm("Bạn có chắc chắn muốn gửi bản kế hoạch KPI này không? Sau khi gửi, bạn không thể tự chỉnh sửa.")) {
+        return;
+      }
+    }
     setError('');
     setSuccess('');
     try {
@@ -350,7 +355,10 @@ export default function MonthlyKPIs() {
   };
 
   const submitReport = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    if (!window.confirm("Bạn có chắc chắn muốn gửi bản báo cáo KPI này không? Sau khi gửi, bạn không thể tự chỉnh sửa.")) {
+      return;
+    }
     setError('');
     setSuccess('');
     try {
@@ -377,6 +385,11 @@ export default function MonthlyKPIs() {
   const handleApprovePlan = async (recordId, approve) => {
     setError('');
     setSuccess('');
+
+    const actionText = approve ? 'duyệt' : 'từ chối';
+    if (!window.confirm(`Bạn có chắc chắn muốn ${actionText} bản kế hoạch KPI này không?`)) {
+      return;
+    }
 
     // Find the record to get the updated metrics
     const targetRecord = records.find(r => r.id === recordId);
@@ -405,6 +418,11 @@ export default function MonthlyKPIs() {
     setError('');
     setSuccess('');
     
+    const actionText = approve ? 'duyệt' : 'từ chối';
+    if (!window.confirm(`Bạn có chắc chắn muốn ${actionText} bản báo cáo KPI này không?`)) {
+      return;
+    }
+
     // Find the record to get the updated metrics
     const targetRecord = records.find(r => r.id === recordId);
     const updatedMetrics = targetRecord ? targetRecord.metrics : [];
@@ -426,6 +444,177 @@ export default function MonthlyKPIs() {
       console.error(err);
       setError(err.response?.data?.error || 'Phê duyệt báo cáo thất bại.');
     }
+  };
+
+  // Client-side Excel & PDF Exporters
+  const handleExportRecordCSV = (rec) => {
+    const isReport = rec.status.includes('report') || rec.status === 'plan_approved';
+    const title = isReport ? `Bao_cao_KPI_thang_${rec.month}` : `Ke_hoach_KPI_thang_${rec.month}`;
+    const filename = `${title}_${rec.employeeName.replace(/\s+/g, '_')}.csv`;
+
+    const headers = [
+      "Loai dau viec",
+      "Tieu de",
+      "Noi dung cong viec",
+      "Diem co so",
+      "So luong",
+      "So loi",
+      "Tong diem dat",
+      "OKR"
+    ];
+
+    const rows = rec.metrics.map(m => [
+      m.category,
+      m.title,
+      m.content,
+      m.baseKpi,
+      m.quantity,
+      m.errorCount || 0,
+      calculateRowTotal(m),
+      m.isOkr ? 'OKR' : ''
+    ]);
+
+    rows.push([]);
+    rows.push(["Muc tieu KPI Co So", rec.baseKpiTarget]);
+    rows.push(["Tong diem dat duoc", rec.metrics.reduce((sum, m) => sum + calculateRowTotal(m), 0)]);
+    rows.push(["Nhom tieng Anh", rec.englishGroup || 'N/A']);
+    rows.push(["Diem kiem tra trung binh", rec.avgTestScore !== null ? rec.avgTestScore : 'N/A']);
+    if (rec.trainingQuestion) {
+      rows.push(["Cau hoi dao tao/Tu luan", rec.trainingQuestion]);
+    }
+
+    const BOM = '\uFEFF';
+    let csvContent = BOM;
+    csvContent += headers.map(h => `"${h.replace(/"/g, '""')}"`).join(',') + '\n';
+    rows.forEach(row => {
+      csvContent += row.map(cell => `"${(cell !== undefined && cell !== null ? cell : '').toString().replace(/"/g, '""')}"`).join(',') + '\n';
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = filename;
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleExportRecordPDF = (rec) => {
+    const isReport = rec.status.includes('report') || rec.status === 'plan_approved';
+    const title = isReport ? `Báo cáo KPI Tháng ${rec.month}` : `Kế hoạch KPI Tháng ${rec.month}`;
+    const totalPoints = rec.metrics.reduce((sum, m) => sum + calculateRowTotal(m), 0);
+    
+    const printWindow = window.open('', '_blank');
+    const html = `
+      <html>
+        <head>
+          <title>${title} - ${rec.employeeName}</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #334155; line-height: 1.6; }
+            .header-container { text-align: center; border-bottom: 3px solid #0ea5e9; padding-bottom: 20px; margin-bottom: 25px; }
+            h1 { color: #0f172a; margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+            h2 { font-size: 14px; font-weight: 600; margin: 5px 0 0 0; color: #64748b; text-transform: uppercase; }
+            .info-grid { display: grid; grid-template-cols: repeat(4, 1fr); gap: 15px; margin: 20px 0; background: #f8fafc; padding: 15px; border-radius: 16px; border: 1px solid #f1f5f9; }
+            .info-card { display: flex; flex-direction: column; }
+            .info-label { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
+            .info-val { font-size: 13px; font-weight: 700; color: #1e293b; margin-top: 2px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 11px; }
+            th, td { border: 1px solid #e2e8f0; padding: 8px 10px; text-align: left; }
+            th { background-color: #f1f5f9; font-weight: 700; color: #475569; text-transform: uppercase; font-size: 9px; letter-spacing: 0.5px; }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .font-bold { font-weight: 700; }
+            .section-title { font-size: 12px; font-weight: 800; margin-top: 25px; color: #0284c7; border-left: 3px solid #0284c7; padding-left: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+            .section-content { font-size: 12px; margin-top: 8px; background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0; color: #475569; white-space: pre-line; }
+            @media print {
+              body { padding: 10px; }
+              @page { size: auto; margin: 20mm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header-container">
+            <h1>${title.toUpperCase()}</h1>
+            <h2>NHÂN SỰ: ${rec.employeeName.toUpperCase()}</h2>
+          </div>
+          
+          <div class="info-grid">
+            <div class="info-card">
+              <span class="info-label">KPI Cơ Sở Target</span>
+              <span class="info-val">${rec.baseKpiTarget.toLocaleString()}</span>
+            </div>
+            <div class="info-card">
+              <span class="info-label">Tổng điểm đạt được</span>
+              <span class="info-val">${totalPoints.toLocaleString()}</span>
+            </div>
+            <div class="info-card">
+              <span class="info-label">Tỷ lệ hoàn thành</span>
+              <span class="info-val">${(totalPoints / rec.baseKpiTarget * 100).toFixed(1)}%</span>
+            </div>
+            <div class="info-card">
+              <span class="info-label">Anh văn / Kiểm tra</span>
+              <span class="info-val">Nhóm ${rec.englishGroup || 'N/A'} ${rec.avgTestScore !== null ? `| ${rec.avgTestScore}đ` : ''}</span>
+            </div>
+          </div>
+          
+          <div class="section-title">Danh sách chi tiết công việc</div>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 5%;" class="text-center">STT</th>
+                <th style="width: 15%;">Đầu việc</th>
+                <th style="width: 25%;">Tiêu đề</th>
+                <th style="width: 30%;">Nội dung công việc</th>
+                <th style="width: 5%;" class="text-center">OKR</th>
+                <th style="width: 8%;" class="text-right">Điểm cơ sở</th>
+                <th style="width: 5%;" class="text-center">SL</th>
+                <th style="width: 5%;" class="text-center">Lỗi</th>
+                <th style="width: 8%;" class="text-right">Tổng</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rec.metrics.map((m, idx) => `
+                <tr>
+                   <td class="text-center">${idx + 1}</td>
+                   <td class="font-bold">${m.category}</td>
+                   <td class="font-bold" style="color: #334155;">${m.title}</td>
+                   <td>${m.content || '—'}</td>
+                   <td class="text-center font-bold" style="color: #0284c7;">${m.isOkr ? 'OKR' : ''}</td>
+                   <td class="text-right">${m.baseKpi}</td>
+                   <td class="text-center">${m.quantity}</td>
+                   <td class="text-center" style="color: ${m.errorCount > 0 ? '#ef4444' : '#475569'}">${m.errorCount || 0}</td>
+                   <td class="text-right font-bold">${(m.baseKpi * m.quantity) - (m.errorCount || 0)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          
+          ${rec.trainingQuestion ? `
+            <div class="section-title">Câu hỏi đào tạo / Tự luận</div>
+            <div class="section-content">${rec.trainingQuestion}</div>
+          ` : ''}
+          
+          ${rec.planComment ? `
+            <div class="section-title">Ý kiến kế hoạch (Admin)</div>
+            <div class="section-content">${rec.planComment} <small style="display:block;color:#94a3b8;margin-top:5px;font-size:10px;">Người duyệt: ${rec.planApprovedBy}</small></div>
+          ` : ''}
+
+          ${rec.reportComment ? `
+            <div class="section-title">Ý kiến báo cáo (Admin)</div>
+            <div class="section-content">${rec.reportComment} <small style="display:block;color:#94a3b8;margin-top:5px;font-size:10px;">Người duyệt: ${rec.reportApprovedBy}</small></div>
+          ` : ''}
+          
+          <script>
+            window.onload = function() {
+              window.print();
+            }
+          </script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(html);
+    printWindow.document.close();
   };
 
   const handleAdminToggleOkr = (recordId, metricIndex) => {
@@ -894,6 +1083,27 @@ export default function MonthlyKPIs() {
                           {badge.icon}
                           {badge.text}
                         </span>
+                        {/* Export Buttons */}
+                        {rec.status !== 'plan_draft' && (
+                          <>
+                            <button
+                              onClick={() => handleExportRecordCSV(rec)}
+                              className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-250/30 rounded-xl text-xxs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-sm"
+                              title="Xuất tệp Excel (.csv)"
+                            >
+                              <FileSpreadsheet size={12} />
+                              Xuất Excel
+                            </button>
+                            <button
+                              onClick={() => handleExportRecordPDF(rec)}
+                              className="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-250/30 rounded-xl text-xxs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-sm"
+                              title="In hoặc Xuất tệp PDF"
+                            >
+                              <FileText size={12} />
+                              Xuất PDF
+                            </button>
+                          </>
+                        )}
                         {/* Report/Plan Edit Action Triggers */}
                         {(rec.status === 'plan_rejected' || rec.status === 'plan_draft') && (
                           <button

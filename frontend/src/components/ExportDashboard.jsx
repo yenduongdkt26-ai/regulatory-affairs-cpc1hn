@@ -53,7 +53,22 @@ export default function ExportDashboard({ data }) {
   const activeChartData = sortedActive;
   const grantedChartData = sortedGranted;
 
-  const COLORS = ['#e0f2fe', '#dcfce7', '#fef9c3', '#fee2e2', '#f3e8ff', '#fce7f3', '#ffedd5', '#ccfbf1'];
+  // Richer, darker colors for bar charts to enhance readability
+  const COLORS = ['#0284c7', '#16a34a', '#ca8a04', '#dc2626', '#7c3aed', '#db2777', '#ea580c', '#0d9488'];
+
+  // Calculate top 3 employees with the most overdue dossiers
+  const overdueCounts = {};
+  overdueList.forEach(item => {
+    if (item.inCharge) {
+      item.inCharge.forEach(name => {
+        overdueCounts[name] = (overdueCounts[name] || 0) + 1;
+      });
+    }
+  });
+  const top3OverdueEmployees = Object.entries(overdueCounts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
 
   const getModalTitle = () => {
     switch (modalType) {
@@ -65,12 +80,15 @@ export default function ExportDashboard({ data }) {
   };
 
   const getModalData = () => {
+    let list = [];
     switch (modalType) {
-      case 'overdue': return overdueList;
-      case '1m': return nearDeadline1mList;
-      case '2m': return nearDeadline2mList;
-      default: return [];
+      case 'overdue': list = overdueList; break;
+      case '1m': list = nearDeadline1mList; break;
+      case '2m': list = nearDeadline2mList; break;
+      default: list = [];
     }
+    // Sort from smallest daysDiff (most overdue/closest deadline) to largest daysDiff
+    return [...list].sort((a, b) => (a.daysDiff || 0) - (b.daysDiff || 0));
   };
 
   const filteredModalData = getModalData().filter(item => {
@@ -515,6 +533,23 @@ export default function ExportDashboard({ data }) {
 
             {/* Modal Table Content */}
             <div className="flex-1 overflow-y-auto p-6">
+              {modalType === 'overdue' && top3OverdueEmployees.length > 0 && (
+                <div className="mb-6 p-4 bg-red-50/70 border border-red-200/50 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-inner shadow-red-100/50 animate-scale-in">
+                  <div>
+                    <h4 className="text-xs font-black text-red-700 uppercase tracking-wider flex items-center gap-1.5">
+                      🚨 Top 3 nhân viên tồn nhiều hồ sơ quá hạn nhất
+                    </h4>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Số liệu được tổng hợp từ danh sách hồ sơ quá hạn hiện tại.</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2.5">
+                    {top3OverdueEmployees.map((emp, i) => (
+                      <span key={emp.name} className="px-3 py-1 bg-red-100 text-red-700 rounded-xl text-xxs font-extrabold shadow-sm border border-red-200/20">
+                        {i + 1}. {emp.name} ({emp.count} hồ sơ)
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
               {filteredModalData.length === 0 ? (
                 <div className="text-center py-12 text-slate-400 font-semibold">
                   Không tìm thấy hồ sơ nào khớp với điều kiện tìm kiếm.
