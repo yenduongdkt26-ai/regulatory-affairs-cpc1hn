@@ -110,31 +110,32 @@ export default function Sidebar({
       {/* Sidebar Container */}
       <aside className={`fixed top-0 bottom-0 left-0 z-50 w-72 lg:w-80 glass-sidebar flex flex-col justify-between border-r border-white/40 shadow-2xl transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`} style={{ backgroundColor: 'rgba(255, 255, 255, 0.85)', backdropFilter: 'blur(16px)' }}>
         
-        <div className="flex flex-col overflow-y-auto flex-1">
-          {/* Logo and App Title */}
-          <div className="p-6 flex items-center justify-between border-b border-slate-100/50">
-            <div className="flex items-center gap-3 relative">
-              <img 
-                src="https://cpc1hn.com.vn/build/assets/logo-DKjpVJOc.svg" 
-                alt="CPC1HN Logo" 
-                className="h-10 w-auto filter drop-shadow-sm"
-              />
-              <div>
-                <h2 className="text-xl font-bold text-slate-800 tracking-tight leading-none">Regulatory</h2>
-                <span className="text-xs font-semibold text-sky-600 tracking-widest uppercase">Affairs</span>
-              </div>
-              <CatWidget />
+        {/* Fixed Logo and App Title Header */}
+        <div className="p-6 flex items-center justify-between border-b border-slate-100/50 bg-white/30 backdrop-blur-md shrink-0">
+          <div className="flex items-center gap-3 relative">
+            <img 
+              src="https://cpc1hn.com.vn/build/assets/logo-DKjpVJOc.svg" 
+              alt="CPC1HN Logo" 
+              className="h-10 w-auto filter drop-shadow-sm"
+            />
+            <div>
+              <h2 className="text-xl font-bold text-slate-800 tracking-tight leading-none">Regulatory</h2>
+              <span className="text-xs font-semibold text-sky-600 tracking-widest uppercase">Affairs</span>
             </div>
-            
-            {/* Close button for mobile */}
-            <button 
-              onClick={() => setSidebarOpen(false)}
-              className="p-1 text-slate-500 hover:text-slate-800 lg:hidden rounded-lg bg-slate-100/50"
-            >
-              <X size={20} />
-            </button>
+            <CatWidget />
           </div>
+          
+          {/* Close button for mobile */}
+          <button 
+            onClick={() => setSidebarOpen(false)}
+            className="p-1 text-slate-500 hover:text-slate-800 lg:hidden rounded-lg bg-slate-100/50"
+          >
+            <X size={20} />
+          </button>
+        </div>
 
+        {/* Scrollable Navigation Links */}
+        <div className="flex flex-col overflow-y-auto flex-1">
           {/* Navigation Links grouped by categories */}
           <nav className="p-4 space-y-6 flex-1">
             {categories.map(cat => {
