@@ -53,8 +53,8 @@ export default function ExportDashboard({ data }) {
   const activeChartData = sortedActive;
   const grantedChartData = sortedGranted;
 
-  // Richer, darker colors for bar charts to enhance readability
-  const COLORS = ['#0284c7', '#16a34a', '#ca8a04', '#dc2626', '#7c3aed', '#db2777', '#ea580c', '#0d9488'];
+  // Slightly lighter, vibrant colors for bar charts to enhance readability without being too dark
+  const COLORS = ['#38bdf8', '#34d399', '#fbbf24', '#fb7185', '#a78bfa', '#f472b6', '#fb923c', '#2dd4bf'];
 
   // Calculate top 3 employees with the most overdue dossiers
   const overdueCounts = {};
@@ -534,17 +534,17 @@ export default function ExportDashboard({ data }) {
             {/* Modal Table Content */}
             <div className="flex-1 overflow-y-auto p-6">
               {modalType === 'overdue' && top3OverdueEmployees.length > 0 && (
-                <div className="mb-6 p-4 bg-red-50/70 border border-red-200/50 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-inner shadow-red-100/50 animate-scale-in">
+                <div className="mb-6 p-4 bg-slate-50 border border-slate-200/60 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm animate-scale-in">
                   <div>
-                    <h4 className="text-xs font-black text-red-700 uppercase tracking-wider flex items-center gap-1.5">
-                      🚨 Top 3 nhân viên tồn nhiều hồ sơ quá hạn nhất
+                    <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                      🚨 Top 3 nhân viên tồn nhiều hồ sơ quá hạn nhất:
                     </h4>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Số liệu được tổng hợp từ danh sách hồ sơ quá hạn hiện tại.</p>
+                    <p className="text-xs text-slate-400 mt-0.5">Số liệu thống kê tự động từ danh sách hồ sơ quá hạn hiện tại.</p>
                   </div>
-                  <div className="flex flex-wrap gap-2.5">
+                  <div className="flex flex-wrap gap-3">
                     {top3OverdueEmployees.map((emp, i) => (
-                      <span key={emp.name} className="px-3 py-1 bg-red-100 text-red-700 rounded-xl text-xxs font-extrabold shadow-sm border border-red-200/20">
-                        {i + 1}. {emp.name} ({emp.count} hồ sơ)
+                      <span key={emp.name} className="text-sm text-slate-700">
+                        {i + 1}. <strong className="font-semibold text-slate-800">{emp.name}</strong> ({emp.count} hồ sơ)
                       </span>
                     ))}
                   </div>
