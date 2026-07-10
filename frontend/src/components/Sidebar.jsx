@@ -12,6 +12,7 @@ import {
   MessageSquare,
   ClipboardList
 } from 'lucide-react';
+import CatWidget from './CatWidget';
 
 export default function Sidebar({ 
   currentTab, 
@@ -112,7 +113,7 @@ export default function Sidebar({
         <div className="flex flex-col overflow-y-auto flex-1">
           {/* Logo and App Title */}
           <div className="p-6 flex items-center justify-between border-b border-slate-100/50">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 relative">
               <img 
                 src="https://cpc1hn.com.vn/build/assets/logo-DKjpVJOc.svg" 
                 alt="CPC1HN Logo" 
@@ -122,6 +123,7 @@ export default function Sidebar({
                 <h2 className="text-xl font-bold text-slate-800 tracking-tight leading-none">Regulatory</h2>
                 <span className="text-xs font-semibold text-sky-600 tracking-widest uppercase">Affairs</span>
               </div>
+              <CatWidget />
             </div>
             
             {/* Close button for mobile */}
