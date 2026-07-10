@@ -528,59 +528,7 @@ export default function AdminPanel({ employees, token }) {
 
       </div>
 
-      {/* Cat Mascot Test / Cheat Panel */}
-      <div className="glass-card rounded-3xl p-6 mt-8 flex flex-col shadow-md">
-        <div className="mb-4">
-          <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-            🐱 Chạy thử linh vật Mèo AI (Desktop Pet)
-          </h3>
-          <p className="text-xs text-slate-400">Các nút điều khiển kiểm tra các hành vi ngẫu nhiên của chú mèo đáng yêu trên giao diện.</p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => window.summonCat && window.summonCat('standard')}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl active:scale-[0.98] transition-all text-xs"
-          >
-            🐾 Mèo đi vào (Standard)
-          </button>
-          <button
-            onClick={() => window.summonCat && window.summonCat('sleepy')}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl active:scale-[0.98] transition-all text-xs"
-          >
-            💤 Mèo ngủ gật (Sleepy)
-          </button>
-          <button
-            onClick={() => window.summonCat && window.summonCat('runner')}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl active:scale-[0.98] transition-all text-xs"
-          >
-            ⚡ Mèo chạy nhanh (Runner)
-          </button>
-          <button
-            onClick={() => window.summonCat && window.summonCat('chaser')}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl active:scale-[0.98] transition-all text-xs"
-          >
-            🦋 Mèo đuổi bướm (Chaser)
-          </button>
-          <button
-            onClick={() => window.summonCat && window.summonCat('coffee')}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl active:scale-[0.98] transition-all text-xs"
-          >
-            ☕ Mèo tặng cà phê (Coffee)
-          </button>
-          <button
-            onClick={() => window.summonCat && window.summonCat('gift')}
-            className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl active:scale-[0.98] transition-all text-xs"
-          >
-            🎁 Mèo tặng quà (Gift)
-          </button>
-          <button
-            onClick={() => window.simulateTaskComplete && window.simulateTaskComplete()}
-            className="px-4 py-2 bg-gradient-to-tr from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold rounded-2xl active:scale-[0.98] transition-all text-xs shadow-md shadow-sky-100"
-          >
-            🎉 Mô phỏng hoàn thành nhiệm vụ
-          </button>
-        </div>
-      </div>
+
 
     </div>
   );
