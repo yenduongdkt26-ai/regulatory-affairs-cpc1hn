@@ -108,65 +108,7 @@ export default function AdminPanel({ employees, token }) {
     }
   };
 
-  // Viber Notification config states & handlers
-  const [viberBotToken, setViberBotToken] = useState('');
-  const [viberMappings, setViberMappings] = useState([]);
-  const [viberMappingEmployee, setViberMappingEmployee] = useState('');
-  const [viberMappingId, setViberMappingId] = useState('');
-  const [viberLoading, setViberLoading] = useState(false);
 
-  const fetchViberConfig = async () => {
-    try {
-      const res = await axios.get(`${API_BASE_URL}/api/viber-config`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setViberBotToken(res.data.viberBotToken || '');
-      setViberMappings(res.data.mappings || []);
-    } catch (err) {
-      console.error("Error fetching Viber config:", err);
-    }
-  };
-
-  const handleSaveViberConfig = async (e) => {
-    e.preventDefault();
-    setViberLoading(true);
-    try {
-      const res = await axios.post(`${API_BASE_URL}/api/viber-config`, {
-        viberBotToken,
-        mappings: viberMappings
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMessage({ text: res.data.message, type: 'success' });
-    } catch (err) {
-      console.error(err);
-      setMessage({ text: err.response?.data?.error || 'Lưu cấu hình Viber thất bại.', type: 'error' });
-    } finally {
-      setViberLoading(false);
-    }
-  };
-
-  const handleAddViberMapping = () => {
-    if (!viberMappingEmployee || !viberMappingId) {
-      setMessage({ text: 'Vui lòng chọn nhân viên và nhập Viber ID', type: 'error' });
-      return;
-    }
-    if (viberMappings.some(m => m.employeeName === viberMappingEmployee)) {
-      setMessage({ text: 'Nhân viên này đã được liên kết Viber ID', type: 'error' });
-      return;
-    }
-    const nextMappings = [...viberMappings, { employeeName: viberMappingEmployee, viberId: viberMappingId }];
-    setViberMappings(nextMappings);
-    setViberMappingEmployee('');
-    setViberMappingId('');
-    setMessage({ text: 'Đã thêm liên kết tạm thời. Nhớ bấm "Lưu cấu hình Viber" để lưu lại!', type: 'success' });
-  };
-
-  const handleDeleteViberMapping = (empName) => {
-    const nextMappings = viberMappings.filter(m => m.employeeName !== empName);
-    setViberMappings(nextMappings);
-    setMessage({ text: 'Đã xóa liên kết tạm thời. Nhớ bấm "Lưu cấu hình Viber" để lưu lại!', type: 'success' });
-  };
 
   useEffect(() => {
     let active = true;
@@ -174,7 +116,6 @@ export default function AdminPanel({ employees, token }) {
       if (active) {
         fetchAccounts();
         fetchCustomSheets();
-        fetchViberConfig();
       }
     });
     return () => {
@@ -577,126 +518,6 @@ export default function AdminPanel({ employees, token }) {
                       onClick={() => handleDeleteSheet(sh.id)}
                       className="p-2 text-red-500 hover:text-red-750 hover:bg-red-100/40 rounded-xl transition-all active:scale-90 shrink-0"
                       title="Xóa nguồn dữ liệu"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Viber Notification Config Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mt-8">
-        
-        {/* Left column: Viber Bot Token */}
-        <div className="glass-card rounded-3xl p-6 lg:col-span-5 flex flex-col justify-between shadow-md h-fit">
-          <div>
-            <div className="mb-6">
-              <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <Phone className="text-violet-600" size={22} />
-                Cấu hình Cảnh báo Viber
-              </h3>
-              <p className="text-xs text-slate-400">Gửi thông báo phê duyệt hoặc từ chối kế hoạch/báo cáo KPI tự động qua tin nhắn Viber.</p>
-            </div>
-
-            <form onSubmit={handleSaveViberConfig} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1.5 pl-1">Viber Bot Token</label>
-                <input
-                  type="password"
-                  placeholder="Nhập Viber Bot Token"
-                  value={viberBotToken}
-                  onChange={(e) => setViberBotToken(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 outline-none focus:border-violet-400 focus:bg-white transition-all duration-200 text-xs font-semibold"
-                />
-              </div>
-
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-slate-500 text-xs space-y-2 leading-relaxed">
-                <strong className="text-slate-700 font-bold block">ℹ️ Hướng dẫn tích hợp:</strong>
-                <p>1. Tạo Viber Bot tại <a href="https://partners.viber.com" target="_blank" rel="noreferrer" className="text-violet-600 font-bold hover:underline">Viber Partners Panel</a>.</p>
-                <p>2. Dán mã Bot Token vào ô phía trên.</p>
-                <p>3. Nhân viên cần nhắn tin cho Bot (ví dụ gửi chữ "Hi") để kích hoạt tài khoản nhận tin nhắn.</p>
-              </div>
-
-              <button
-                type="submit"
-                disabled={viberLoading}
-                className="w-full py-3 bg-gradient-to-tr from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-2xl text-sm font-bold transition-all shadow-md active:scale-98 disabled:opacity-50"
-              >
-                {viberLoading ? 'Đang lưu...' : 'Lưu cấu hình Viber'}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* Right column: Viber ID Mappings */}
-        <div className="glass-card rounded-3xl p-6 lg:col-span-7 flex flex-col shadow-md">
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              <Users className="text-violet-600" size={22} />
-              Liên kết tài khoản Viber Nhân sự
-            </h3>
-            <p className="text-xs text-slate-400">Ánh xạ tên nhân sự với Viber User ID của họ để gửi tin nhắn chính xác.</p>
-          </div>
-
-          {/* Add Mapping Row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 bg-slate-50/50 p-4 rounded-2xl border border-slate-100/50">
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 pl-1">Nhân viên</label>
-              <select
-                value={viberMappingEmployee}
-                onChange={(e) => setViberMappingEmployee(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-850 outline-none text-xs font-semibold"
-              >
-                <option value="">-- Chọn nhân viên --</option>
-                {employees.map(emp => (
-                  <option key={emp.fullName} value={emp.fullName}>{emp.fullName}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 pl-1">Viber User ID</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Nhập Viber User ID..."
-                  value={viberMappingId}
-                  onChange={(e) => setViberMappingId(e.target.value)}
-                  className="flex-1 px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-850 outline-none text-xs font-semibold"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddViberMapping}
-                  className="px-4 py-2 bg-violet-600 hover:bg-violet-750 text-white rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm"
-                >
-                  Thêm
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Mapping List Table */}
-          <div className="flex-1 overflow-y-auto max-h-64">
-            {viberMappings.length === 0 ? (
-              <div className="text-center py-8 text-slate-400 text-xs font-medium">
-                Chưa có tài khoản nhân sự nào liên kết Viber.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                {viberMappings.map((map) => (
-                  <div key={map.employeeName} className="p-3 bg-slate-50/60 rounded-xl border border-slate-200/50 flex items-center justify-between gap-4">
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-xs">{map.employeeName}</h4>
-                      <p className="text-[10px] text-slate-400 font-mono mt-0.5 select-all">{map.viberId}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteViberMapping(map.employeeName)}
-                      className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all active:scale-90"
-                      title="Xóa liên kết"
                     >
                       <Trash2 size={14} />
                     </button>

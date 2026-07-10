@@ -1490,26 +1490,7 @@ app.post('/api/notifications/read', authenticateToken, (req, res) => {
   }
 });
 
-// Viber API: GET Viber configuration (Admin only)
-app.get('/api/viber-config', authenticateToken, requireAdmin, (req, res) => {
-  try {
-    res.json(readViberConfig());
-  } catch (err) {
-    res.status(500).json({ error: "Lỗi khi lấy cấu hình Viber." });
-  }
-});
 
-// Viber API: POST Viber configuration (Admin only)
-app.post('/api/viber-config', authenticateToken, requireAdmin, (req, res) => {
-  const { viberBotToken, mappings } = req.body;
-  try {
-    const config = { viberBotToken: viberBotToken || "", mappings: mappings || [] };
-    writeViberConfig(config);
-    res.json({ message: "Lưu cấu hình Viber thành công!" });
-  } catch (err) {
-    res.status(500).json({ error: "Lỗi khi lưu cấu hình Viber." });
-  }
-});
 
 
 // Helper: serialize dossier data to plain text format for AI prompt
@@ -2098,67 +2079,6 @@ function addNotification(username, employeeName, message, type) {
   };
   notifs.push(newNotif);
   writeNotifications(notifs);
-
-  // Send Viber message asynchronously
-  sendViberNotification(employeeName, message).catch(err => {
-    console.error("Async Viber send failed:", err);
-  });
-}
-
-const viberConfigPath = path.join(DATA_DIR, 'viber_config.json');
-function readViberConfig() {
-  try {
-    if (!fs.existsSync(viberConfigPath)) {
-      fs.writeFileSync(viberConfigPath, JSON.stringify({ viberBotToken: "", mappings: [] }, null, 2));
-    }
-    return JSON.parse(fs.readFileSync(viberConfigPath, 'utf8'));
-  } catch (err) {
-    console.error("Error reading Viber config:", err);
-    return { viberBotToken: "", mappings: [] };
-  }
-}
-function writeViberConfig(config) {
-  try {
-    fs.writeFileSync(viberConfigPath, JSON.stringify(config, null, 2));
-  } catch (err) {
-    console.error("Error writing Viber config:", err);
-  }
-}
-
-async function sendViberNotification(employeeName, message) {
-  const config = readViberConfig();
-  const token = process.env.VIBER_BOT_TOKEN || config.viberBotToken;
-  if (!token) {
-    console.log(`[Viber Notify Bypass] No Viber Bot Token configured. Cannot notify ${employeeName}.`);
-    return;
-  }
-  
-  const userMap = config.mappings.find(m => m.employeeName === employeeName);
-  if (!userMap || !userMap.viberId) {
-    console.log(`[Viber Notify Bypass] No Viber ID mapped for employee: ${employeeName}.`);
-    return;
-  }
-  
-  try {
-    const viberUrl = 'https://chatapi.viber.com/pa/send_message';
-    await axios.post(viberUrl, {
-      receiver: userMap.viberId,
-      min_api_version: 1,
-      sender: {
-        name: "RA CPC1HN Bot"
-      },
-      type: "text",
-      text: message
-    }, {
-      headers: {
-        'X-Viber-Auth-Token': token,
-        'Content-Type': 'application/json'
-      }
-    });
-    console.log(`[Viber Notify Success] Sent message to ${employeeName} via Viber.`);
-  } catch (err) {
-    console.error(`[Viber Notify Error] Failed to notify ${employeeName}:`, err.response?.data || err.message);
-  }
 }
 
 
