@@ -123,10 +123,10 @@ export default function CatWidget() {
 
       {/* Speech Bubble */}
       {showBubble && (
-        <div className="absolute left-full ml-3 top-0 z-50 w-44 p-3 bg-white border border-slate-150 rounded-2xl shadow-xl text-slate-700 text-xs font-semibold leading-relaxed animate-scale-in">
-          {/* Arrow pointing to cat */}
-          <div className="absolute right-full top-3 w-0 h-0 border-t-6 border-t-transparent border-b-6 border-b-transparent border-r-6 border-r-white z-20"></div>
-          <div className="absolute right-full top-3 w-0 h-0 border-t-6 border-t-transparent border-b-6 border-b-transparent border-r-6 border-slate-150 filter drop-shadow-[-1px_0_0_rgba(0,0,0,0.05)] z-10 -translate-x-[1px]"></div>
+        <div className="absolute right-[-10px] top-full mt-2.5 z-50 w-52 p-3 bg-white border border-slate-200 rounded-2xl shadow-xl text-slate-700 text-xs font-semibold leading-relaxed animate-scale-in">
+          {/* Arrow pointing up to cat */}
+          <div className="absolute bottom-full right-4 w-0 h-0 border-l-6 border-l-transparent border-r-6 border-r-transparent border-b-6 border-b-white z-20"></div>
+          <div className="absolute bottom-full right-4 w-0 h-0 border-l-6 border-l-transparent border-r-6 border-r-transparent border-b-6 border-slate-200 z-10 -translate-y-[1px]"></div>
           {bubbleText}
         </div>
       )}
@@ -167,11 +167,42 @@ export default function CatWidget() {
         )}
 
         {catState === 'stretching' && (
-          <img 
-            src="/stretching_cat.png" 
-            alt="Stretching Cat" 
-            className="w-11 h-11 object-contain animate-cat-stretch"
-          />
+          <svg viewBox="0 0 100 100" className="w-10 h-10 animate-cat-stretch">
+            {/* Rump/Back legs */}
+            <ellipse cx="32" cy="62" rx="12" ry="16" fill="#f97316" />
+            {/* Stretched body path */}
+            <path d="M 32,52 Q 52,72 74,68 L 74,78 Q 52,82 32,68 Z" fill="#f97316" />
+            {/* Stripes */}
+            <path d="M42 58 Q46 62 42 66" stroke="#ea580c" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+            <path d="M54 62 Q57 66 54 70" stroke="#ea580c" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+            {/* Head */}
+            <circle cx="72" cy="58" r="14" fill="#f97316" />
+            {/* Ears */}
+            <polygon points="63,50 65,37 72,47" fill="#f97316" />
+            <polygon points="73,47 80,37 82,50" fill="#f97316" />
+            {/* Happy Eyes */}
+            <path d="M66 58 Q68 56 70 58" stroke="#7c2d12" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+            <path d="M74 58 Q76 56 78 58" stroke="#7c2d12" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+            {/* Nose */}
+            <polygon points="72,61 71,60 73,60" fill="#fda4af" />
+            {/* Mouth */}
+            <path d="M71 63 Q72 64 73 63" stroke="#7c2d12" strokeWidth="1" fill="none" strokeLinecap="round" />
+            {/* Front paws extended */}
+            <ellipse cx="78" cy="74" rx="7" ry="4" fill="#f97316" />
+            <ellipse cx="70" cy="75" rx="7" ry="4" fill="#f97316" />
+            {/* Back paw */}
+            <circle cx="24" cy="68" r="6" fill="#f97316" />
+            {/* Tail waving up */}
+            <path 
+              d="M24 48 C22 25 34 20 30 15" 
+              stroke="#f97316" 
+              strokeWidth="5" 
+              strokeLinecap="round" 
+              fill="none" 
+              className="animate-cat-tail"
+              style={{ transformOrigin: '24px 48px' }}
+            />
+          </svg>
         )}
 
         {catState === 'licking' && (
