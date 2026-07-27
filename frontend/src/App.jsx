@@ -14,6 +14,7 @@ import LegalLibrary from './components/LegalLibrary';
 import RegulatoryChatbot from './components/RegulatoryChatbot';
 import MonthlyKPIs from './components/MonthlyKPIs';
 import NotificationCenter from './components/NotificationCenter';
+import ChangePasswordModal from './components/ChangePasswordModal';
 import { Menu, RefreshCw, Clock, AlertTriangle, CalendarClock } from 'lucide-react';
 
 export default function App() {
@@ -39,6 +40,7 @@ export default function App() {
   
   const [currentTab, setCurrentTab] = useState('export-dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   const fetchData = async (force = false) => {
     if (!token) return;
@@ -274,6 +276,7 @@ export default function App() {
         setCurrentTab={setCurrentTab}
         user={user}
         onLogout={handleLogout}
+        onOpenChangePassword={() => setIsChangePasswordOpen(true)}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
         domesticAlertCount={domesticAlerts}
@@ -342,6 +345,13 @@ export default function App() {
 
       </div>
       <ChatAssistantWidget />
+
+      {/* Active Change Password Modal */}
+      <ChangePasswordModal 
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+        token={token}
+      />
     </div>
   );
 }

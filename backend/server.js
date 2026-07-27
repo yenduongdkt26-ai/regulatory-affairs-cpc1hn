@@ -125,6 +125,28 @@ function writeUsers(users) {
   }
 }
 
+// Helper: Password reset requests storage
+const pwdRequestsPath = path.join(DATA_DIR, 'password_requests.json');
+function readPasswordRequests() {
+  try {
+    if (!fs.existsSync(pwdRequestsPath)) {
+      fs.writeFileSync(pwdRequestsPath, JSON.stringify([], null, 2));
+    }
+    return JSON.parse(fs.readFileSync(pwdRequestsPath, 'utf8'));
+  } catch (err) {
+    console.error("Error reading password requests:", err);
+    return [];
+  }
+}
+
+function writePasswordRequests(reqs) {
+  try {
+    fs.writeFileSync(pwdRequestsPath, JSON.stringify(reqs, null, 2));
+  } catch (err) {
+    console.error("Error writing password requests:", err);
+  }
+}
+
 // Auto-hashing for initial plain passwords
 function hashPlainPasswords() {
   const users = readUsers();
@@ -1015,6 +1037,113 @@ app.post('/api/auth/change-password', (req, res) => {
     res.json({ message: "Đổi mật khẩu thành công!" });
   } catch (err) {
     res.status(401).json({ error: "Phiên đăng nhập hết hạn, vui lòng đăng nhập lại" });
+  }
+});
+
+// User Request Password Reset (Public)
+app.post('/api/auth/request-reset', (req, res) => {
+  const { username } = req.body;
+  if (!username) {
+    return res.status(400).json({ error: "Vui lòng nhập số điện thoại tài khoản." });
+  }
+
+  const users = readUsers();
+  const user = users.find(u => u.username === username || u.id === username);
+
+  if (!user) {
+    return res.status(404).json({ error: "Không tìm thấy tài khoản với số điện thoại này." });
+  }
+
+  const reqs = readPasswordRequests();
+  if (!reqs.some(r => r.username === user.username)) {
+    reqs.push({
+      id: 'req_' + Date.now(),
+      userId: user.id,
+      username: user.username,
+      employeeName: user.employeeName,
+      createdAt: new Date().toISOString()
+    });
+    writePasswordRequests(reqs);
+
+    // Send notification to all admins
+    const admins = users.filter(u => u.role === 'admin');
+    admins.forEach(admin => {
+      addNotification(admin.username, admin.employeeName, `Nhân viên ${user.employeeName} (${user.username}) đã gửi yêu cầu cấp lại mật khẩu.`, 'info');
+    });
+  }
+
+  res.json({ message: `Yêu cầu cấp lại mật khẩu của ${user.employeeName} đã được gửi đến Admin. Vui lòng báo Admin cấp lại mật khẩu ngẫu nhiên cho bạn.` });
+});
+
+// Admin Route: Get list of password reset requests
+app.get('/api/auth/reset-requests', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: "Chưa đăng nhập" });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ error: "Bạn không có quyền admin" });
+    }
+    const reqs = readPasswordRequests();
+    res.json(reqs);
+  } catch (err) {
+    res.status(401).json({ error: "Phiên làm việc hết hạn" });
+  }
+});
+
+// Admin Route: Generate random new password for user
+app.post('/api/auth/admin-reset-password', (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: "Chưa đăng nhập" });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    if (decoded.role !== 'admin') {
+      return res.status(403).json({ error: "Bạn không có quyền admin" });
+    }
+
+    const { userId } = req.body;
+    if (!userId) {
+      return res.status(400).json({ error: "Thiếu thông tin người dùng" });
+    }
+
+    const users = readUsers();
+    const userIndex = users.findIndex(u => u.id === userId || u.username === userId);
+    if (userIndex === -1) {
+      return res.status(404).json({ error: "Không tìm thấy tài khoản" });
+    }
+
+    const user = users[userIndex];
+
+    // Generate random 8-character password
+    const chars = '23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
+    let newPassword = '';
+    for (let i = 0; i < 8; i++) {
+      newPassword += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    user.password = bcrypt.hashSync(newPassword, 10);
+    user.isFirstLogin = true; // Requires changing password on next login
+    writeUsers(users);
+
+    // Clear pending request for this user
+    let reqs = readPasswordRequests();
+    reqs = reqs.filter(r => r.userId !== userId && r.username !== user.username);
+    writePasswordRequests(reqs);
+
+    res.json({
+      message: `Đã cấp lại mật khẩu ngẫu nhiên cho ${user.employeeName} thành công.`,
+      newPassword,
+      employeeName: user.employeeName,
+      username: user.username
+    });
+  } catch (err) {
+    res.status(401).json({ error: "Phiên làm việc hết hạn" });
   }
 });
 

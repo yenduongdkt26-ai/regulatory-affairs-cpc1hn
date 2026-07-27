@@ -10,7 +10,8 @@ import {
   FolderOpen,
   BookOpen,
   MessageSquare,
-  ClipboardList
+  ClipboardList,
+  KeyRound
 } from 'lucide-react';
 import CatWidget from './CatWidget';
 
@@ -19,6 +20,7 @@ export default function Sidebar({
   setCurrentTab, 
   user, 
   onLogout, 
+  onOpenChangePassword,
   sidebarOpen, 
   setSidebarOpen,
   domesticAlertCount,
@@ -217,13 +219,23 @@ export default function Sidebar({
             </div>
           </div>
           
-          <button
-            onClick={onLogout}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-600 font-bold rounded-2xl transition-all duration-150 text-sm active:scale-[0.98]"
-          >
-            <LogOut size={16} />
-            <span>Đăng xuất</span>
-          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={onOpenChangePassword}
+              className="flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 hover:bg-sky-50 hover:text-sky-600 text-slate-700 font-bold rounded-2xl transition-all duration-150 text-xs active:scale-[0.98]"
+              title="Đổi mật khẩu tài khoản"
+            >
+              <KeyRound size={14} />
+              <span>Đổi mật khẩu</span>
+            </button>
+            <button
+              onClick={onLogout}
+              className="flex items-center justify-center gap-1.5 py-2.5 bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-600 font-bold rounded-2xl transition-all duration-150 text-xs active:scale-[0.98]"
+            >
+              <LogOut size={14} />
+              <span>Đăng xuất</span>
+            </button>
+          </div>
         </div>
       </aside>
     </>

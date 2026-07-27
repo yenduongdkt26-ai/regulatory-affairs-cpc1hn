@@ -1,16 +1,19 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
-import { KeyRound, Phone, ShieldCheck, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { KeyRound, Phone, ShieldCheck, Lock, Eye, EyeOff, AlertCircle, CheckCircle2, ArrowLeft, Send } from 'lucide-react';
 
 export default function Login({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [loading, setLoading] = useState(false);
   
-  // First login state
+  // First login / reset password required state
   const [isFirstLogin, setIsFirstLogin] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  
   const [tempToken, setTempToken] = useState('');
   const [tempUser, setTempUser] = useState(null);
   const [newPassword, setNewPassword] = useState('');
@@ -25,6 +28,7 @@ export default function Login({ onLoginSuccess }) {
       return;
     }
     setError('');
+    setSuccessMessage('');
     setLoading(true);
 
     try {
@@ -50,6 +54,26 @@ export default function Login({ onLoginSuccess }) {
     }
   };
 
+  const handleRequestReset = async (e) => {
+    e.preventDefault();
+    if (!username) {
+      setError('Vui lòng nhập số điện thoại tài khoản của bạn');
+      return;
+    }
+    setError('');
+    setSuccessMessage('');
+    setLoading(true);
+
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/request-reset`, { username });
+      setSuccessMessage(res.data.message);
+      setLoading(false);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Gửi yêu cầu thất bại. Vui lòng kiểm tra lại số điện thoại.');
+      setLoading(false);
+    }
+  };
+
   const handleChangePassword = async (e) => {
     e.preventDefault();
     if (newPassword.length < 4) {
@@ -70,8 +94,6 @@ export default function Login({ onLoginSuccess }) {
         { headers: { Authorization: `Bearer ${tempToken}` } }
       );
 
-      // Successfully changed password, proceed to login with same credentials
-      // Save token and user settings
       const user = {
         employeeName: tempUser?.employeeName || (username === '0762334260' ? 'Dương Hải Yến' : 'Nhân viên'),
         username: tempUser?.username || username,
@@ -103,8 +125,12 @@ export default function Login({ onLoginSuccess }) {
             <ShieldCheck size={32} />
           </div>
           <h1 className="text-3xl font-extrabold text-slate-800 tracking-tight">Regulatory Affairs</h1>
-          <p className="text-slate-500 mt-2 text-base">
-            {isFirstLogin ? 'Đổi mật khẩu cho lần đăng nhập đầu tiên' : 'Đăng nhập vào hệ thống tổng hợp báo cáo'}
+          <p className="text-slate-500 mt-2 text-sm leading-relaxed">
+            {isFirstLogin 
+              ? 'Yêu cầu đổi mật khẩu bảo mật' 
+              : isForgotPassword 
+                ? 'Yêu cầu Admin cấp lại mật khẩu ngẫu nhiên' 
+                : 'Đăng nhập vào hệ thống tổng hợp báo cáo'}
           </p>
         </div>
 
@@ -115,8 +141,15 @@ export default function Login({ onLoginSuccess }) {
           </div>
         )}
 
-        {!isFirstLogin ? (
-          /* Login Form */
+        {successMessage && (
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-start gap-3 text-emerald-700 text-sm animate-scale-in leading-relaxed">
+            <CheckCircle2 size={18} className="shrink-0 mt-0.5 text-emerald-600" />
+            <span>{successMessage}</span>
+          </div>
+        )}
+
+        {/* Normal Login Form */}
+        {!isFirstLogin && !isForgotPassword && (
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2 pl-1">Số điện thoại</label>
@@ -135,7 +168,20 @@ export default function Login({ onLoginSuccess }) {
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-2 pl-1">Mật khẩu</label>
+              <div className="flex items-center justify-between mb-2 px-1">
+                <label className="text-sm font-semibold text-slate-700">Mật khẩu</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError('');
+                    setSuccessMessage('');
+                    setIsForgotPassword(true);
+                  }}
+                  className="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline"
+                >
+                  Quên mật khẩu?
+                </button>
+              </div>
               <div className="relative">
                 <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
                   <Lock size={18} />
@@ -167,15 +213,64 @@ export default function Login({ onLoginSuccess }) {
             
             <div className="text-center mt-4">
               <span className="text-slate-400 text-xs">
-                Đăng nhập lần đầu: Tên đăng nhập và mật khẩu là số điện thoại do Admin cấp.
+                Mặc định đăng nhập lần đầu: Tên đăng nhập và mật khẩu là số điện thoại do Admin cấp.
               </span>
             </div>
           </form>
-        ) : (
-          /* First Login Password Change Form */
+        )}
+
+        {/* Forgot Password View */}
+        {isForgotPassword && (
+          <form onSubmit={handleRequestReset} className="space-y-5 animate-fade-in">
+            <div className="bg-sky-50 border border-sky-200 p-4 rounded-2xl text-sky-800 text-xs mb-4 leading-relaxed">
+              <strong>Hướng dẫn khôi phục:</strong> Nhập số điện thoại tài khoản của bạn. Hệ thống sẽ báo yêu cầu đến Admin để Admin sinh mật khẩu mới ngẫu nhiên cho bạn.
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-2 pl-1">Số điện thoại của bạn</label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 pl-4 flex items-center text-slate-400">
+                  <Phone size={18} />
+                </span>
+                <input
+                  type="text"
+                  placeholder="Nhập số điện thoại đăng ký"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 outline-none focus:border-sky-400 focus:bg-white transition-all duration-200 text-base"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 bg-gradient-to-r from-sky-500 to-indigo-600 text-white font-bold rounded-2xl hover:from-sky-600 hover:to-indigo-700 active:scale-[0.98] transition-all duration-150 shadow-lg shadow-sky-100 disabled:opacity-50 text-base flex items-center justify-center gap-2"
+            >
+              <Send size={18} />
+              <span>{loading ? 'Đang gửi yêu cầu...' : 'Gửi yêu cầu cấp lại mật khẩu'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setError('');
+                setSuccessMessage('');
+                setIsForgotPassword(false);
+              }}
+              className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-2xl transition-all duration-150 text-sm flex items-center justify-center gap-2 mt-2"
+            >
+              <ArrowLeft size={16} />
+              <span>Quay lại trang Đăng nhập</span>
+            </button>
+          </form>
+        )}
+
+        {/* First Login / Forced Password Change View */}
+        {isFirstLogin && (
           <form onSubmit={handleChangePassword} className="space-y-5 animate-fade-in">
             <div className="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-amber-800 text-xs mb-4 leading-relaxed">
-              <strong>Yêu cầu bảo mật:</strong> Đây là lần đầu tiên bạn đăng nhập. Bạn phải đổi mật khẩu mặc định (số điện thoại) thành mật khẩu riêng tư để tiếp tục.
+              <strong>Yêu cầu bảo mật bắt buộc:</strong> Tài khoản của bạn vừa đăng nhập bằng mật khẩu mặc định hoặc mật khẩu ngẫu nhiên do Admin cấp. Vì lý do an toàn, vui lòng tự tạo mật khẩu riêng trước khi tiếp tục.
             </div>
 
             <div>
@@ -222,10 +317,11 @@ export default function Login({ onLoginSuccess }) {
               disabled={loading}
               className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-2xl hover:from-amber-600 hover:to-orange-600 active:scale-[0.98] transition-all duration-150 shadow-lg shadow-orange-100 disabled:opacity-50 text-base mt-2"
             >
-              {loading ? 'Đang cập nhật...' : 'Cập nhật mật khẩu & Đăng nhập'}
+              {loading ? 'Đang cập nhật...' : 'Cập nhật mật khẩu mới & Vào hệ thống'}
             </button>
           </form>
         )}
+
       </div>
     </div>
   );

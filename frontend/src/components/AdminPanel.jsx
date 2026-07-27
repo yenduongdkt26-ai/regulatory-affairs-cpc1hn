@@ -14,7 +14,12 @@ import {
   Trash2,
   Database,
   Link2,
-  ShieldCheck
+  ShieldCheck,
+  KeyRound,
+  Copy,
+  Check,
+  RotateCcw,
+  X
 } from 'lucide-react';
 
 export default function AdminPanel({ employees, token }) {
@@ -27,6 +32,11 @@ export default function AdminPanel({ employees, token }) {
 
   const [isCustomEmployee, setIsCustomEmployee] = useState(false);
   const [customEmployeeName, setCustomEmployeeName] = useState('');
+
+  // Password reset request & generated password modal states
+  const [resetRequests, setResetRequests] = useState([]);
+  const [generatedPasswordModal, setGeneratedPasswordModal] = useState(null);
+  const [copiedPassword, setCopiedPassword] = useState(false);
 
   // Chatbot custom sheets states
   const [customSheets, setCustomSheets] = useState([]);
@@ -47,6 +57,36 @@ export default function AdminPanel({ employees, token }) {
       console.error("Error fetching accounts:", err);
     } finally {
       setFetching(false);
+    }
+  };
+
+  const fetchResetRequests = async () => {
+    try {
+      const res = await axios.get(`${API_BASE_URL}/api/auth/reset-requests`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setResetRequests(res.data || []);
+    } catch (err) {
+      console.error("Error fetching reset requests:", err);
+    }
+  };
+
+  const handleAdminResetPassword = async (userId, empName) => {
+    if (!window.confirm(`Bạn có chắc chắn muốn cấp mật khẩu mới ngẫu nhiên cho ${empName}?`)) return;
+    try {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/admin-reset-password`, { userId }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setGeneratedPasswordModal({
+        employeeName: res.data.employeeName,
+        username: res.data.username,
+        newPassword: res.data.newPassword
+      });
+      setCopiedPassword(false);
+      fetchAccounts();
+      fetchResetRequests();
+    } catch (err) {
+      setMessage({ text: err.response?.data?.error || 'Cấp mật khẩu thất bại', type: 'error' });
     }
   };
 
@@ -116,6 +156,7 @@ export default function AdminPanel({ employees, token }) {
       if (active) {
         fetchAccounts();
         fetchCustomSheets();
+        fetchResetRequests();
       }
     });
     return () => {
@@ -205,6 +246,39 @@ export default function AdminPanel({ employees, token }) {
         }`}>
           {message.type === 'error' ? <AlertCircle size={18} className="shrink-0 mt-0.5" /> : <CheckCircle2 size={18} className="shrink-0 mt-0.5" />}
           <span>{message.text}</span>
+        </div>
+      )}
+
+      {/* Pending Password Reset Requests Alert Banner */}
+      {resetRequests.length > 0 && (
+        <div className="glass-card rounded-3xl p-6 bg-amber-50/50 border border-amber-200 shadow-md animate-scale-in">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2.5 bg-amber-100 text-amber-700 rounded-2xl">
+              <ShieldAlert size={22} />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-amber-900">Yêu cầu Cấp lại Mật khẩu ({resetRequests.length})</h3>
+              <p className="text-xs text-amber-700">Các nhân viên dưới đây đã yêu cầu cấp lại mật khẩu mới:</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {resetRequests.map(req => (
+              <div key={req.id} className="p-4 bg-white rounded-2xl border border-amber-200/60 flex items-center justify-between gap-4 shadow-sm">
+                <div>
+                  <h4 className="font-bold text-slate-800 text-sm">{req.employeeName}</h4>
+                  <p className="text-xs text-slate-500 mt-0.5">SĐT đăng nhập: <strong className="text-slate-700">{req.username}</strong> • Gửi lúc: {new Date(req.createdAt).toLocaleString('vi-VN')}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleAdminResetPassword(req.userId, req.employeeName)}
+                  className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1.5 shrink-0"
+                >
+                  <KeyRound size={14} />
+                  <span>Cấp mật khẩu ngẫu nhiên</span>
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -358,18 +432,26 @@ export default function AdminPanel({ employees, token }) {
                           )}
                         </td>
                         <td className="py-3.5 text-center">
-                          {acc.role === 'admin' ? (
-                            <span className="text-slate-400 text-xs italic">—</span>
-                          ) : (
+                          <div className="flex items-center justify-center gap-1">
                             <button
                               type="button"
-                              onClick={() => handleDeleteAccount(acc.id, acc.employeeName)}
-                              className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all inline-flex items-center justify-center active:scale-95"
-                              title="Xóa tài khoản"
+                              onClick={() => handleAdminResetPassword(acc.id, acc.employeeName)}
+                              className="p-1.5 text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-xl transition-all inline-flex items-center justify-center active:scale-95"
+                              title="Cấp mật khẩu mới ngẫu nhiên"
                             >
-                              <Trash2 size={15} />
+                              <KeyRound size={15} />
                             </button>
-                          )}
+                            {acc.role !== 'admin' && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteAccount(acc.id, acc.employeeName)}
+                                className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all inline-flex items-center justify-center active:scale-95"
+                                title="Xóa tài khoản"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -528,9 +610,69 @@ export default function AdminPanel({ employees, token }) {
           </div>
         </div>
 
-      </div>
+      {/* Generated Password Modal */}
+      {generatedPasswordModal && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl relative border border-slate-100 animate-scale-in text-center">
+            <button
+              onClick={() => setGeneratedPasswordModal(null)}
+              className="absolute top-5 right-5 p-1.5 text-slate-400 hover:text-slate-700 rounded-xl hover:bg-slate-100 transition-all"
+            >
+              <X size={20} />
+            </button>
 
+            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+              <KeyRound size={32} />
+            </div>
 
+            <h3 className="text-xl font-bold text-slate-800 mb-1">Mật khẩu ngẫu nhiên mới</h3>
+            <p className="text-xs text-slate-500 mb-6">
+              Đã cấp mật khẩu ngẫu nhiên cho nhân viên <strong className="text-slate-800">{generatedPasswordModal.employeeName}</strong> ({generatedPasswordModal.username})
+            </p>
+
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl mb-6 relative group">
+              <span className="text-2xl font-mono font-black tracking-widest text-amber-900 select-all block">
+                {generatedPasswordModal.newPassword}
+              </span>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(generatedPasswordModal.newPassword);
+                  setCopiedPassword(true);
+                  setTimeout(() => setCopiedPassword(false), 2000);
+                }}
+                className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl font-bold text-sm hover:from-amber-600 hover:to-orange-600 transition-all shadow-md shadow-orange-100 flex items-center justify-center gap-2"
+              >
+                {copiedPassword ? (
+                  <>
+                    <Check size={18} />
+                    <span>Đã sao chép!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={18} />
+                    <span>Sao chép mật khẩu</span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setGeneratedPasswordModal(null)}
+                className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-sm transition-all"
+              >
+                Đóng
+              </button>
+            </div>
+
+            <p className="text-xxs text-slate-400 mt-4 leading-relaxed">
+              * Hãy sao chép và gửi mật khẩu ngẫu nhiên này cho nhân viên. Sau khi nhân viên đăng nhập bằng mật khẩu này, hệ thống sẽ tự động yêu cầu nhân viên đổi mật khẩu mới.
+            </p>
+          </div>
+        </div>
+      )}
 
     </div>
   );
