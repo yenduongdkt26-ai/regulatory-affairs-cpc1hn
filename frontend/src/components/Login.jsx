@@ -177,9 +177,10 @@ export default function Login({ onLoginSuccess }) {
                     setSuccessMessage('');
                     setIsForgotPassword(true);
                   }}
-                  className="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline"
+                  className="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline flex items-center gap-1"
                 >
-                  Quên mật khẩu?
+                  <KeyRound size={13} />
+                  <span>Quên mật khẩu?</span>
                 </button>
               </div>
               <div className="relative">
@@ -211,10 +212,22 @@ export default function Login({ onLoginSuccess }) {
               {loading ? 'Đang xác thực...' : 'Đăng nhập'}
             </button>
             
-            <div className="text-center mt-4">
-              <span className="text-slate-400 text-xs">
+            <div className="text-center pt-3 border-t border-slate-100 space-y-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setError('');
+                  setSuccessMessage('');
+                  setIsForgotPassword(true);
+                }}
+                className="text-xs font-bold text-sky-600 hover:text-sky-700 hover:underline inline-flex items-center gap-1.5 py-1 px-3 bg-sky-50 rounded-xl border border-sky-100"
+              >
+                <KeyRound size={14} />
+                <span>Bạn quên mật khẩu? Báo Admin cấp lại mật khẩu ngẫu nhiên</span>
+              </button>
+              <div className="text-slate-400 text-xs">
                 Mặc định đăng nhập lần đầu: Tên đăng nhập và mật khẩu là số điện thoại do Admin cấp.
-              </span>
+              </div>
             </div>
           </form>
         )}
