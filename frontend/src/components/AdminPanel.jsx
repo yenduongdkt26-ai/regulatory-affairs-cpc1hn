@@ -610,6 +610,8 @@ export default function AdminPanel({ employees, token }) {
           </div>
         </div>
 
+      </div>
+
       {/* Generated Password Modal */}
       {generatedPasswordModal && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
