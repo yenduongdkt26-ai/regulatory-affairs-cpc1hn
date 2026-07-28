@@ -42,25 +42,34 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
-  const fetchData = async (force = false) => {
+  const fetchData = async (force = false, retryCount = 0) => {
     if (!token) return;
     if (force) {
       setRefreshing(true);
     } else if (!data) {
       setLoading(true);
     }
-    setError('');
+    if (retryCount === 0) setError('');
 
     try {
       const url = `${API_BASE_URL}/api/data?t=${Date.now()}${force ? '&refresh=true' : ''}`;
-      const res = await axios.get(url);
+      const res = await axios.get(url, { timeout: 45000 });
       setData(res.data);
-    } catch (err) {
-      console.error("Error fetching report data:", err);
-      setError('Không thể kết nối đến máy chủ dữ liệu. Vui lòng kiểm tra backend.');
-    } finally {
+      setError('');
       setLoading(false);
       setRefreshing(false);
+    } catch (err) {
+      console.error(`Error fetching report data (attempt ${retryCount + 1}):`, err);
+      if (retryCount < 2) {
+        console.log(`Server waking up... Retrying fetch in 3.5s...`);
+        setTimeout(() => {
+          fetchData(force, retryCount + 1);
+        }, 3500);
+      } else {
+        setError('Không thể kết nối đến máy chủ dữ liệu. Vui lòng bấm "Đồng bộ Sheets" để thử lại.');
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 

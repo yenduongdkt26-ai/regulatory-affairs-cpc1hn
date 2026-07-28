@@ -320,11 +320,11 @@ async function fetchAndAggregate() {
   
   for (const key of keys) {
     try {
-      const res = await axios.get(`${GOOGLE_SHEETS[key]}&t=${Date.now()}`);
+      const res = await axios.get(`${GOOGLE_SHEETS[key]}&t=${Date.now()}`, { timeout: 15000 });
       responses[key] = res.data;
     } catch (err) {
-      console.error(`Error fetching sheet ${key}:`, err.message);
-      throw new Error(`Failed to fetch ${key}`);
+      console.error(`Warning: Error fetching sheet ${key}:`, err.message);
+      responses[key] = ""; // Graceful fallback
     }
   }
 
@@ -956,6 +956,10 @@ app.get('/api/data', authenticateToken, async (req, res) => {
     } catch (err) {
       return res.status(500).json({ error: "Failed to fetch data", details: err.message });
     }
+  }
+
+  if (!dataCache.data) {
+    return res.status(503).json({ error: "Dữ liệu đang được tải, vui lòng thử lại sau giây lát." });
   }
 
   // Clone cache to avoid modifying the global cache
