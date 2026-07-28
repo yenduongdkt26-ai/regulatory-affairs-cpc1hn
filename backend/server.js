@@ -230,6 +230,51 @@ function normalizeName(str) {
     .trim();
 }
 
+function normalizeHeader(str) {
+  if (!str) return "";
+  return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+}
+
+// Dynamically detect column indices for Export sheets regardless of format/STT column
+function detectExportColumns(headerRow) {
+  if (!headerRow || !Array.isArray(headerRow)) {
+    return { sttCol: 0, inChargeCol: 1, productNameCol: 2, exportNameCol: 3, countryCol: 4, deadlineCol: 5, classificationCol: 6, noteCol: 7 };
+  }
+  
+  const norm = headerRow.map(normalizeHeader);
+  
+  let inChargeCol = norm.findIndex(h => h.includes("dkt") || h.includes("phu trach"));
+  let productNameCol = norm.findIndex(h => h.includes("ten san pham") || h.includes("ten thuoc") || h.includes("san pham"));
+  let exportNameCol = norm.findIndex(h => h.includes("ten xuat khau") || (h.includes("xuat khau") && !h.includes("nuoc")));
+  let countryCol = norm.findIndex(h => h.includes("nuoc"));
+  let deadlineCol = norm.findIndex(h => h.includes("deadline") || h.includes("han"));
+  let classificationCol = norm.findIndex(h => h.includes("phan loai"));
+  let noteCol = norm.findIndex(h => h.includes("note") || h.includes("ghi chu") || h.includes("qua han") || h.includes("nv dang xu ly"));
+  let sttCol = norm.findIndex(h => h === "stt");
+
+  const hasStt = sttCol !== -1 || (norm[0] && norm[0] === "stt");
+  const offset = hasStt ? 1 : 0;
+
+  if (inChargeCol === -1) inChargeCol = offset + 0;
+  if (productNameCol === -1) productNameCol = offset + 1;
+  if (exportNameCol === -1) exportNameCol = offset + 2;
+  if (countryCol === -1) countryCol = offset + 3;
+  if (deadlineCol === -1) deadlineCol = offset + 4;
+  if (classificationCol === -1) classificationCol = offset + 5;
+  if (noteCol === -1) noteCol = offset + 6;
+
+  return {
+    sttCol: hasStt ? sttCol : -1,
+    inChargeCol,
+    productNameCol,
+    exportNameCol,
+    countryCol,
+    deadlineCol,
+    classificationCol,
+    noteCol
+  };
+}
+
 // Check deadline date helper
 // format in exports: YYYY-MM-DD
 // format in domestic: DD/MM/YYYY
@@ -335,124 +380,133 @@ async function fetchAndAggregate() {
   // 2. Process HSXK (Export active)
   const hsxkLines = parseCSV(responses.hsxk);
   const hsxkData = [];
-  for (let i = 1; i < hsxkLines.length; i++) {
-    const row = hsxkLines[i];
-    if (row.length < 7 || !row[2]) continue; // needs product name
-    const matched = getMatchedEmployees(row[1]);
-    
-    // Accumulate workload from raw row
-    matched.forEach(name => {
-      if (exportWorkload[name] !== undefined) exportWorkload[name]++;
-    });
-    if (row[1] && (row[1].toLowerCase().includes('khách -exp') || row[1].toLowerCase().includes('khach -exp'))) {
-      exportWorkload['Khách -EXP']++;
+  if (hsxkLines.length > 0) {
+    const cols = detectExportColumns(hsxkLines[0]);
+    for (let i = 1; i < hsxkLines.length; i++) {
+      const row = hsxkLines[i];
+      if (row.length <= cols.productNameCol || !row[cols.productNameCol]) continue; // needs product name
+      const matched = getMatchedEmployees(row[cols.inChargeCol]);
+      
+      // Accumulate workload from raw row
+      matched.forEach(name => {
+        if (exportWorkload[name] !== undefined) exportWorkload[name]++;
+      });
+      if (row[cols.inChargeCol] && (row[cols.inChargeCol].toLowerCase().includes('khách -exp') || row[cols.inChargeCol].toLowerCase().includes('khach -exp'))) {
+        exportWorkload['Khách -EXP']++;
+      }
+
+      if (matched.length === 0) continue; // remove unauthorized employees
+
+      const deadline = parseDeadline(row[cols.deadlineCol]);
+      const daysDiff = deadline ? getDaysDiff(deadline, refDate) : null;
+      let alarmStatus = null; // 'overdue', '1m', '2m'
+      if (daysDiff !== null) {
+        if (daysDiff < 0) alarmStatus = 'overdue';
+        else if (daysDiff <= 30) alarmStatus = '1m';
+        else if (daysDiff <= 60) alarmStatus = '2m';
+      }
+
+      hsxkData.push({
+        stt: cols.sttCol !== -1 ? row[cols.sttCol] : String(hsxkData.length + 1),
+        inCharge: matched,
+        productName: row[cols.productNameCol] ? row[cols.productNameCol].trim() : "",
+        exportName: row[cols.exportNameCol] ? row[cols.exportNameCol].trim() : "",
+        country: row[cols.countryCol] ? row[cols.countryCol].trim() : "",
+        deadline: row[cols.deadlineCol] ? row[cols.deadlineCol].trim() : "",
+        daysDiff,
+        alarmStatus,
+        classification: row[cols.classificationCol] ? row[cols.classificationCol].trim() : "",
+        note: row[cols.noteCol] ? row[cols.noteCol].trim() : ""
+      });
     }
-
-    if (matched.length === 0) continue; // remove unauthorized employees
-
-    const deadline = parseDeadline(row[5]);
-    const daysDiff = deadline ? getDaysDiff(deadline, refDate) : null;
-    let alarmStatus = null; // 'overdue', '1m', '2m'
-    if (daysDiff !== null) {
-      if (daysDiff < 0) alarmStatus = 'overdue';
-      else if (daysDiff <= 30) alarmStatus = '1m';
-      else if (daysDiff <= 60) alarmStatus = '2m';
-    }
-
-    hsxkData.push({
-      stt: row[0],
-      inCharge: matched,
-      productName: row[2].trim(),
-      exportName: row[3] ? row[3].trim() : "",
-      country: row[4] ? row[4].trim() : "",
-      deadline: row[5] ? row[5].trim() : "",
-      daysDiff,
-      alarmStatus,
-      classification: row[6] ? row[6].trim() : "",
-      note: row[7] ? row[7].trim() : ""
-    });
   }
 
   // 3. Process Nhãn đăng ký (Registration Labels)
   const ndkLines = parseCSV(responses.nhanDangKy);
   const ndkData = [];
-  for (let i = 1; i < ndkLines.length; i++) {
-    const row = ndkLines[i];
-    if (row.length < 7 || !row[2]) continue;
-    const matched = getMatchedEmployees(row[1]);
-    
-    // Accumulate workload from raw row
-    matched.forEach(name => {
-      if (exportWorkload[name] !== undefined) exportWorkload[name]++;
-    });
-    if (row[1] && (row[1].toLowerCase().includes('khách -exp') || row[1].toLowerCase().includes('khach -exp'))) {
-      exportWorkload['Khách -EXP']++;
+  if (ndkLines.length > 0) {
+    const cols = detectExportColumns(ndkLines[0]);
+    for (let i = 1; i < ndkLines.length; i++) {
+      const row = ndkLines[i];
+      if (row.length <= cols.productNameCol || !row[cols.productNameCol]) continue;
+      const matched = getMatchedEmployees(row[cols.inChargeCol]);
+      
+      // Accumulate workload from raw row
+      matched.forEach(name => {
+        if (exportWorkload[name] !== undefined) exportWorkload[name]++;
+      });
+      if (row[cols.inChargeCol] && (row[cols.inChargeCol].toLowerCase().includes('khách -exp') || row[cols.inChargeCol].toLowerCase().includes('khach -exp'))) {
+        exportWorkload['Khách -EXP']++;
+      }
+
+      if (matched.length === 0) continue;
+
+      const deadline = parseDeadline(row[cols.deadlineCol]);
+      const daysDiff = deadline ? getDaysDiff(deadline, refDate) : null;
+      let alarmStatus = null;
+      if (daysDiff !== null) {
+        if (daysDiff < 0) alarmStatus = 'overdue';
+        else if (daysDiff <= 30) alarmStatus = '1m';
+        else if (daysDiff <= 60) alarmStatus = '2m';
+      }
+
+      ndkData.push({
+        stt: cols.sttCol !== -1 ? row[cols.sttCol] : String(ndkData.length + 1),
+        inCharge: matched,
+        productName: row[cols.productNameCol] ? row[cols.productNameCol].trim() : "",
+        exportName: row[cols.exportNameCol] ? row[cols.exportNameCol].trim() : "",
+        country: row[cols.countryCol] ? row[cols.countryCol].trim() : "",
+        deadline: row[cols.deadlineCol] ? row[cols.deadlineCol].trim() : "",
+        daysDiff,
+        alarmStatus,
+        classification: row[cols.classificationCol] ? row[cols.classificationCol].trim() : "",
+        note: row[cols.noteCol] ? row[cols.noteCol].trim() : ""
+      });
     }
-
-    if (matched.length === 0) continue;
-
-    const deadline = parseDeadline(row[5]);
-    const daysDiff = deadline ? getDaysDiff(deadline, refDate) : null;
-    let alarmStatus = null;
-    if (daysDiff !== null) {
-      if (daysDiff < 0) alarmStatus = 'overdue';
-      else if (daysDiff <= 30) alarmStatus = '1m';
-      else if (daysDiff <= 60) alarmStatus = '2m';
-    }
-
-    ndkData.push({
-      stt: row[0],
-      inCharge: matched,
-      productName: row[2].trim(),
-      exportName: row[3] ? row[3].trim() : "",
-      country: row[4] ? row[4].trim() : "",
-      deadline: row[5] ? row[5].trim() : "",
-      daysDiff,
-      alarmStatus,
-      classification: row[6] ? row[6].trim() : "",
-      note: row[7] ? row[7].trim() : ""
-    });
   }
 
   // 4. Process Nhãn sản xuất (Production Labels)
   const nsxLines = parseCSV(responses.nhanSanXuat);
   const nsxData = [];
-  for (let i = 1; i < nsxLines.length; i++) {
-    const row = nsxLines[i];
-    if (row.length < 7 || !row[2]) continue;
-    const matched = getMatchedEmployees(row[1]);
-    
-    // Accumulate workload from raw row
-    matched.forEach(name => {
-      if (exportWorkload[name] !== undefined) exportWorkload[name]++;
-    });
-    if (row[1] && (row[1].toLowerCase().includes('khách -exp') || row[1].toLowerCase().includes('khach -exp'))) {
-      exportWorkload['Khách -EXP']++;
+  if (nsxLines.length > 0) {
+    const cols = detectExportColumns(nsxLines[0]);
+    for (let i = 1; i < nsxLines.length; i++) {
+      const row = nsxLines[i];
+      if (row.length <= cols.productNameCol || !row[cols.productNameCol]) continue;
+      const matched = getMatchedEmployees(row[cols.inChargeCol]);
+      
+      // Accumulate workload from raw row
+      matched.forEach(name => {
+        if (exportWorkload[name] !== undefined) exportWorkload[name]++;
+      });
+      if (row[cols.inChargeCol] && (row[cols.inChargeCol].toLowerCase().includes('khách -exp') || row[cols.inChargeCol].toLowerCase().includes('khach -exp'))) {
+        exportWorkload['Khách -EXP']++;
+      }
+
+      if (matched.length === 0) continue;
+
+      const deadline = parseDeadline(row[cols.deadlineCol]);
+      const daysDiff = deadline ? getDaysDiff(deadline, refDate) : null;
+      let alarmStatus = null;
+      if (daysDiff !== null) {
+        if (daysDiff < 0) alarmStatus = 'overdue';
+        else if (daysDiff <= 30) alarmStatus = '1m';
+        else if (daysDiff <= 60) alarmStatus = '2m';
+      }
+
+      nsxData.push({
+        stt: cols.sttCol !== -1 ? row[cols.sttCol] : String(nsxData.length + 1),
+        inCharge: matched,
+        productName: row[cols.productNameCol] ? row[cols.productNameCol].trim() : "",
+        exportName: row[cols.exportNameCol] ? row[cols.exportNameCol].trim() : "",
+        country: row[cols.countryCol] ? row[cols.countryCol].trim() : "",
+        deadline: row[cols.deadlineCol] ? row[cols.deadlineCol].trim() : "",
+        daysDiff,
+        alarmStatus,
+        classification: row[cols.classificationCol] ? row[cols.classificationCol].trim() : "",
+        note: row[cols.noteCol] ? row[cols.noteCol].trim() : ""
+      });
     }
-
-    if (matched.length === 0) continue;
-
-    const deadline = parseDeadline(row[5]);
-    const daysDiff = deadline ? getDaysDiff(deadline, refDate) : null;
-    let alarmStatus = null;
-    if (daysDiff !== null) {
-      if (daysDiff < 0) alarmStatus = 'overdue';
-      else if (daysDiff <= 30) alarmStatus = '1m';
-      else if (daysDiff <= 60) alarmStatus = '2m';
-    }
-
-    nsxData.push({
-      stt: row[0],
-      inCharge: matched,
-      productName: row[2].trim(),
-      exportName: row[3] ? row[3].trim() : "",
-      country: row[4] ? row[4].trim() : "",
-      deadline: row[5] ? row[5].trim() : "",
-      daysDiff,
-      alarmStatus,
-      classification: row[6] ? row[6].trim() : "",
-      note: row[7] ? row[7].trim() : ""
-    });
   }
 
   // 5. Process HSBS trong nước (Domestic Supplement Files)
