@@ -495,82 +495,83 @@ export default function ExportDashboard({ data }) {
 
       {/* Overdue / Deadlines Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-md animate-fade-in">
-          <div className="w-full max-w-4xl glass-card rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-slate-900/40 backdrop-blur-md animate-fade-in">
+          <div className="w-full max-w-6xl bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] border border-slate-200/80 animate-scale-in">
             
             {/* Modal Header */}
-            <div className="p-6 bg-slate-50/50 border-b border-slate-100/50 flex items-center justify-between">
+            <div className="px-6 py-5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-bold text-slate-800">{getModalTitle()}</h3>
-                <p className="text-xs text-slate-400 mt-1">Đã lọc chỉ hiển thị các nhân viên có tên trong danh sách nhân sự chính thức.</p>
+                <h3 className="text-xl font-extrabold text-slate-800 tracking-tight">{getModalTitle()}</h3>
+                <p className="text-xs text-slate-500 mt-1 font-medium">Hiển thị danh sách hồ sơ chi tiết và nhân sự phụ trách thời gian thực.</p>
               </div>
               <button 
                 onClick={() => setModalOpen(false)}
-                className="p-1.5 text-slate-500 hover:text-slate-800 rounded-xl bg-slate-100 hover:bg-slate-200 transition-colors"
+                className="p-2 text-slate-400 hover:text-slate-700 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 transition-colors shadow-sm"
               >
                 <X size={20} />
               </button>
             </div>
 
-            {/* Search Input */}
-            <div className="p-4 border-b border-slate-100/50 bg-white/40 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 flex-1">
-                <Search className="text-slate-400 shrink-0" size={20} />
+            {/* Search Bar & Copy Action */}
+            <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/40 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3 flex-1 bg-white px-4 py-2.5 rounded-2xl border border-slate-200 shadow-inner">
+                <Search className="text-slate-400 shrink-0" size={18} />
                 <input
                   type="text"
-                  placeholder="Tìm kiếm sản phẩm, nước xuất khẩu, nhân viên..."
+                  placeholder="Tìm kiếm theo sản phẩm, nước, phụ trách, NV đang xử lý, phân loại..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 font-semibold"
+                  className="w-full bg-transparent border-none outline-none text-slate-800 placeholder-slate-400 font-medium text-xs sm:text-sm"
                 />
               </div>
               <button
                 onClick={handleCopyTable}
-                className="px-4 py-2 bg-gradient-to-tr from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1.5 shrink-0"
+                className="px-4 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-2xl text-xs font-bold transition-all shadow-md active:scale-95 flex items-center gap-1.5 shrink-0"
               >
-                {copied ? <Check size={14} /> : <Copy size={14} />}
-                {copied ? 'Đã sao chép!' : 'Sao chép bảng'}
+                {copied ? <Check size={16} /> : <Copy size={16} />}
+                <span>{copied ? 'Đã sao chép!' : 'Sao chép bảng'}</span>
               </button>
             </div>
 
             {/* Modal Table Content */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 bg-white">
               {modalType === 'overdue' && top3OverdueEmployees.length > 0 && (
-                <div className="mb-6 p-4 bg-slate-50 border border-slate-200/60 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-sm animate-scale-in">
+                <div className="mb-5 p-4 bg-red-50/60 border border-red-200/70 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xs">
                   <div>
-                    <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-1.5">
+                    <h4 className="text-xs font-bold text-red-800 flex items-center gap-1.5 uppercase tracking-wider">
                       🚨 Top 3 nhân viên tồn nhiều hồ sơ quá hạn nhất:
                     </h4>
-                    <p className="text-xs text-slate-400 mt-0.5">Số liệu thống kê tự động từ danh sách hồ sơ quá hạn hiện tại.</p>
+                    <p className="text-xs text-red-600/80 mt-0.5 font-medium">Thống kê số liệu trực tiếp từ các bộ hồ sơ chưa hoàn thành.</p>
                   </div>
                   <div className="flex flex-wrap gap-3">
                     {top3OverdueEmployees.map((emp, i) => (
-                      <span key={emp.name} className="text-sm text-slate-700">
-                        {i + 1}. <strong className="font-semibold text-slate-800">{emp.name}</strong> ({emp.count} hồ sơ)
+                      <span key={emp.name} className="text-xs text-slate-700 bg-white/80 px-3 py-1 rounded-xl border border-red-100 font-semibold shadow-2xs">
+                        {i + 1}. <strong className="font-bold text-slate-900">{emp.name}</strong> ({emp.count} HS)
                       </span>
                     ))}
                   </div>
                 </div>
               )}
+
               {filteredModalData.length === 0 ? (
-                <div className="text-center py-12 text-slate-400 font-semibold">
-                  Không tìm thấy hồ sơ nào khớp với điều kiện tìm kiếm.
+                <div className="text-center py-16 text-slate-400 font-medium text-sm">
+                  Không tìm thấy hồ sơ nào khớp với từ khóa tìm kiếm.
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-left text-sm">
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-2xs">
+                  <table className="w-full border-collapse text-left text-xs font-sans">
                     <thead>
-                      <tr className="border-b border-slate-200 text-slate-400 uppercase text-xxs font-black tracking-wider">
-                        <th className="pb-3 pl-3">Sản phẩm</th>
-                        <th className="pb-3">Nước</th>
-                        <th className="pb-3">Phụ trách</th>
-                        <th className="pb-3">NV đang xử lý</th>
-                        <th className="pb-3">Deadline</th>
-                        <th className="pb-3 text-center">Cảnh báo</th>
-                        <th className="pb-3">Phân loại</th>
+                      <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-xs">
+                        <th className="px-4 py-3.5">Sản phẩm</th>
+                        <th className="px-4 py-3.5">Nước</th>
+                        <th className="px-4 py-3.5">Phụ trách</th>
+                        <th className="px-4 py-3.5">NV đang xử lý</th>
+                        <th className="px-4 py-3.5">Deadline</th>
+                        <th className="px-4 py-3.5 text-center">Cảnh báo</th>
+                        <th className="px-4 py-3.5">Phân loại</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100 bg-white">
                       {filteredModalData.map((item, idx) => {
                         const days = item.daysDiff;
                         let badgeColor;
@@ -578,28 +579,30 @@ export default function ExportDashboard({ data }) {
 
                         if (days < 0) {
                           alertText = `Đã quá hạn ${Math.abs(days)} ngày`;
-                          badgeColor = 'bg-red-100 text-red-700 font-extrabold';
+                          badgeColor = 'bg-red-100 text-red-700 border border-red-200 font-bold';
                         } else {
                           alertText = `Còn ${days} ngày`;
-                          badgeColor = days <= 30 ? 'bg-amber-100 text-amber-700 font-bold' : 'bg-yellow-100 text-yellow-700 font-bold';
+                          badgeColor = days <= 30 
+                            ? 'bg-amber-100 text-amber-800 border border-amber-200 font-semibold' 
+                            : 'bg-yellow-50 text-yellow-800 border border-yellow-200 font-semibold';
                         }
 
                         return (
-                          <tr key={idx} className="hover:bg-slate-50/50">
-                            <td className="py-4 pl-3 pr-4">
-                              <div className="font-bold text-slate-800">{item.productName}</div>
-                              {item.exportName && <div className="text-xs text-slate-400 font-medium">{item.exportName}</div>}
+                          <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                            <td className="px-4 py-3.5 align-top">
+                              <div className="font-bold text-slate-800 text-xs sm:text-sm">{item.productName}</div>
+                              {item.exportName && <div className="text-xxs text-slate-400 font-medium mt-0.5">{item.exportName}</div>}
                             </td>
-                            <td className="py-4 font-semibold text-slate-700">{item.country || '—'}</td>
-                            <td className="py-4 font-semibold text-slate-600 whitespace-nowrap">{item.inCharge.join(', ')}</td>
-                            <td className="py-4 text-xs font-semibold text-sky-800 bg-sky-50/80 px-2.5 py-1 rounded-xl whitespace-nowrap">{item.note || '—'}</td>
-                            <td className="py-4 text-slate-500 whitespace-nowrap">{item.deadline}</td>
-                            <td className="py-4 text-center whitespace-nowrap">
-                              <span className={`px-3 py-1 rounded-full text-xs inline-block ${badgeColor}`}>
+                            <td className="px-4 py-3.5 align-top font-semibold text-slate-700 whitespace-nowrap">{item.country || '—'}</td>
+                            <td className="px-4 py-3.5 align-top font-semibold text-slate-700 whitespace-nowrap">{item.inCharge.join(', ')}</td>
+                            <td className="px-4 py-3.5 align-top font-semibold text-slate-700 leading-relaxed">{item.note || '—'}</td>
+                            <td className="px-4 py-3.5 align-top font-semibold text-slate-600 whitespace-nowrap">{item.deadline || '—'}</td>
+                            <td className="px-4 py-3.5 align-top text-center whitespace-nowrap">
+                              <span className={`px-3 py-1 rounded-xl text-xxs inline-block shadow-2xs ${badgeColor}`}>
                                 {alertText}
                               </span>
                             </td>
-                            <td className="py-4 text-xs font-semibold text-slate-500">{item.classification || '—'}</td>
+                            <td className="px-4 py-3.5 align-top font-medium text-slate-500 whitespace-nowrap">{item.classification || '—'}</td>
                           </tr>
                         );
                       })}
@@ -610,10 +613,10 @@ export default function ExportDashboard({ data }) {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 bg-slate-50/50 border-t border-slate-100/50 flex justify-end">
+            <div className="px-6 py-4 bg-slate-50/80 border-t border-slate-200 flex justify-end">
               <button
                 onClick={() => setModalOpen(false)}
-                className="px-6 py-2.5 bg-slate-800 text-white hover:bg-slate-700 font-bold rounded-2xl active:scale-[0.98] transition-all text-sm"
+                className="px-6 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-2xl active:scale-[0.98] transition-all text-xs sm:text-sm shadow-md"
               >
                 Đóng
               </button>
