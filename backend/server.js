@@ -238,7 +238,7 @@ function normalizeHeader(str) {
 // Dynamically detect column indices for Export sheets regardless of format/STT column
 function detectExportColumns(headerRow) {
   if (!headerRow || !Array.isArray(headerRow)) {
-    return { sttCol: 0, inChargeCol: 1, productNameCol: 2, exportNameCol: 3, countryCol: 4, deadlineCol: 5, classificationCol: 6, noteCol: 7 };
+    return { sttCol: -1, inChargeCol: 0, productNameCol: 1, exportNameCol: 2, countryCol: 3, deadlineCol: 4, classificationCol: 5, noteCol: 6 };
   }
   
   const norm = headerRow.map(normalizeHeader);
@@ -247,9 +247,11 @@ function detectExportColumns(headerRow) {
   let productNameCol = norm.findIndex(h => h.includes("ten san pham") || h.includes("ten thuoc") || h.includes("san pham"));
   let exportNameCol = norm.findIndex(h => h.includes("ten xuat khau") || (h.includes("xuat khau") && !h.includes("nuoc")));
   let countryCol = norm.findIndex(h => h.includes("nuoc"));
-  let deadlineCol = norm.findIndex(h => h.includes("deadline") || h.includes("han"));
+  let deadlineCol = norm.findIndex(h => h.includes("deadline") || (h.includes("han") && !h.includes("qua han")));
   let classificationCol = norm.findIndex(h => h.includes("phan loai"));
-  let noteCol = norm.findIndex(h => h.includes("note") || h.includes("ghi chu") || h.includes("qua han") || h.includes("nv dang xu ly"));
+  
+  // Strictly target NV đang xử lý / Ghi chú / Note, explicitly ignoring "quá hạn" column
+  let noteCol = norm.findIndex(h => (h.includes("nv dang xu ly") || h.includes("nguoi xu ly") || h.includes("ghi chu") || h.includes("note")) && !h.includes("qua han"));
   let sttCol = norm.findIndex(h => h === "stt");
 
   const hasStt = sttCol !== -1 || (norm[0] && norm[0] === "stt");
@@ -273,6 +275,14 @@ function detectExportColumns(headerRow) {
     classificationCol,
     noteCol
   };
+}
+
+function cleanNoteVal(val) {
+  if (!val) return "";
+  val = val.trim();
+  const lower = val.toLowerCase();
+  if (lower.includes("qua han") || lower.includes("quá hạn")) return "";
+  return val;
 }
 
 // Check deadline date helper
@@ -416,7 +426,7 @@ async function fetchAndAggregate() {
         daysDiff,
         alarmStatus,
         classification: row[cols.classificationCol] ? row[cols.classificationCol].trim() : "",
-        note: row[cols.noteCol] ? row[cols.noteCol].trim() : ""
+        note: cleanNoteVal(row[cols.noteCol])
       });
     }
   }
@@ -460,7 +470,7 @@ async function fetchAndAggregate() {
         daysDiff,
         alarmStatus,
         classification: row[cols.classificationCol] ? row[cols.classificationCol].trim() : "",
-        note: row[cols.noteCol] ? row[cols.noteCol].trim() : ""
+        note: cleanNoteVal(row[cols.noteCol])
       });
     }
   }
@@ -504,7 +514,7 @@ async function fetchAndAggregate() {
         daysDiff,
         alarmStatus,
         classification: row[cols.classificationCol] ? row[cols.classificationCol].trim() : "",
-        note: row[cols.noteCol] ? row[cols.noteCol].trim() : ""
+        note: cleanNoteVal(row[cols.noteCol])
       });
     }
   }
