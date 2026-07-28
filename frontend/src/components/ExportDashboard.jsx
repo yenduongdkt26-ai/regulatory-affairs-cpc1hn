@@ -96,13 +96,14 @@ export default function ExportDashboard({ data }) {
       item.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.exportName && item.exportName.toLowerCase().includes(searchTerm.toLowerCase())) ||
       item.inCharge.join(', ').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.note && item.note.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.country && item.country.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.classification && item.classification.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   });
 
   const handleCopyTable = async () => {
-    const headers = ["Sản phẩm", "Tên xuất khẩu", "Nước", "Phụ trách", "Deadline", "Cảnh báo", "Phân loại"];
+    const headers = ["Sản phẩm", "Tên xuất khẩu", "Nước", "Phụ trách", "NV đang xử lý", "Deadline", "Cảnh báo", "Phân loại"];
     const rows = filteredModalData.map(item => {
       const days = item.daysDiff;
       const alertText = days !== null ? (days < 0 ? `Đã quá hạn ${Math.abs(days)} ngày` : `Còn ${days} ngày`) : '—';
@@ -111,6 +112,7 @@ export default function ExportDashboard({ data }) {
         item.exportName || '—',
         item.country || '—',
         item.inCharge.join(', '),
+        item.note || '—',
         item.deadline || '—',
         alertText,
         item.classification || '—'
@@ -562,6 +564,7 @@ export default function ExportDashboard({ data }) {
                         <th className="pb-3 pl-3">Sản phẩm</th>
                         <th className="pb-3">Nước</th>
                         <th className="pb-3">Phụ trách</th>
+                        <th className="pb-3">NV đang xử lý</th>
                         <th className="pb-3">Deadline</th>
                         <th className="pb-3 text-center">Cảnh báo</th>
                         <th className="pb-3">Phân loại</th>
@@ -589,6 +592,7 @@ export default function ExportDashboard({ data }) {
                             </td>
                             <td className="py-4 font-semibold text-slate-700">{item.country || '—'}</td>
                             <td className="py-4 font-semibold text-slate-600 whitespace-nowrap">{item.inCharge.join(', ')}</td>
+                            <td className="py-4 text-xs font-semibold text-sky-800 bg-sky-50/80 px-2.5 py-1 rounded-xl whitespace-nowrap">{item.note || '—'}</td>
                             <td className="py-4 text-slate-500 whitespace-nowrap">{item.deadline}</td>
                             <td className="py-4 text-center whitespace-nowrap">
                               <span className={`px-3 py-1 rounded-full text-xs inline-block ${badgeColor}`}>
