@@ -218,7 +218,7 @@ export default function MonthlyKPIs() {
       ? Number(row.totalKpi)
       : base * qty;
     
-    const rounded = Math.round(val * 10) / 10;
+    const rounded = Math.round(val * 100) / 100;
 
     if (row.category === "Điểm trừ") {
       return -Math.abs(rounded);
@@ -309,15 +309,15 @@ export default function MonthlyKPIs() {
       if (field === 'baseKpi' || field === 'quantity') {
         const base = Number(copy[idx].baseKpi) || 0;
         const qty = Number(copy[idx].quantity) || 0;
-        copy[idx].totalKpi = Math.round(base * qty * 10) / 10;
+        copy[idx].totalKpi = Math.round(base * qty * 100) / 100;
       }
 
       if (field === 'quantity' && val !== '' && val !== null && !isNaN(val)) {
-        copy[idx].quantity = Math.round(Number(val) * 10) / 10;
+        copy[idx].quantity = Math.round(Number(val) * 100) / 100;
       }
 
       if (field === 'totalKpi' && val !== '' && val !== null && !isNaN(val)) {
-        copy[idx].totalKpi = Math.round(Number(val) * 10) / 10;
+        copy[idx].totalKpi = Math.round(Number(val) * 100) / 100;
       }
 
       return copy;
@@ -670,7 +670,7 @@ export default function MonthlyKPIs() {
   const calculateTotalPoints = (rows) => {
     if (!Array.isArray(rows)) return 0;
     const sum = rows.reduce((sum, row) => sum + calculateRowTotal(row), 0);
-    return Math.round(sum * 10) / 10;
+    return Math.round(sum * 100) / 100;
   };
 
   const getAchievementRate = (totalPoints, baseTarget) => {
@@ -2074,7 +2074,7 @@ export default function MonthlyKPIs() {
                           <td className="px-3 py-1.5">
                             <input
                               type="number"
-                              step="0.1"
+                              step="0.01"
                               required
                               min={0}
                               value={row.quantity}
@@ -2345,7 +2345,7 @@ export default function MonthlyKPIs() {
                           <td className="px-3 py-1.5">
                             <input
                               type="number"
-                              step="0.1"
+                              step="0.01"
                               required
                               min={0}
                               value={row.quantity}
