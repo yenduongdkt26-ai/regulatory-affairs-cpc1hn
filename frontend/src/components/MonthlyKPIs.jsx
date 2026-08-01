@@ -312,6 +312,10 @@ export default function MonthlyKPIs() {
         copy[idx].totalKpi = Math.round(base * qty * 10) / 10;
       }
 
+      if (field === 'quantity' && val !== '' && val !== null && !isNaN(val)) {
+        copy[idx].quantity = Math.round(Number(val) * 10) / 10;
+      }
+
       if (field === 'totalKpi' && val !== '' && val !== null && !isNaN(val)) {
         copy[idx].totalKpi = Math.round(Number(val) * 10) / 10;
       }
@@ -2070,7 +2074,7 @@ export default function MonthlyKPIs() {
                           <td className="px-3 py-1.5">
                             <input
                               type="number"
-                              step="1"
+                              step="0.1"
                               required
                               min={0}
                               value={row.quantity}
@@ -2341,7 +2345,7 @@ export default function MonthlyKPIs() {
                           <td className="px-3 py-1.5">
                             <input
                               type="number"
-                              step="1"
+                              step="0.1"
                               required
                               min={0}
                               value={row.quantity}

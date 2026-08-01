@@ -2347,7 +2347,7 @@ app.post('/api/kpi/plan', authenticateToken, (req, res) => {
         content: m.content || '',
         isOkr: !!m.isOkr,
         baseKpi: Math.round((Number(m.baseKpi) || 0) * 10) / 10,
-        quantity: Number(m.quantity) || 0,
+        quantity: Math.round((Number(m.quantity) || 0) * 10) / 10,
         errorCount: Number(m.errorCount) || 0,
         totalKpi: m.totalKpi !== undefined && m.totalKpi !== '' && m.totalKpi !== null
           ? Math.round(Number(m.totalKpi) * 10) / 10
@@ -2457,7 +2457,7 @@ app.post('/api/kpi/report', authenticateToken, (req, res) => {
       content: m.content || '',
       isOkr: !!m.isOkr,
       baseKpi: Math.round((Number(m.baseKpi) || 0) * 10) / 10,
-      quantity: Number(m.quantity) || 0,
+      quantity: Math.round((Number(m.quantity) || 0) * 10) / 10,
       errorCount: Number(m.errorCount) || 0,
       totalKpi: m.totalKpi !== undefined && m.totalKpi !== '' && m.totalKpi !== null
         ? Math.round(Number(m.totalKpi) * 10) / 10
