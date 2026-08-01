@@ -2346,10 +2346,12 @@ app.post('/api/kpi/plan', authenticateToken, (req, res) => {
         title: m.title,
         content: m.content || '',
         isOkr: !!m.isOkr,
-        baseKpi: Number(m.baseKpi) || 0,
+        baseKpi: Math.round((Number(m.baseKpi) || 0) * 10) / 10,
         quantity: Number(m.quantity) || 0,
         errorCount: Number(m.errorCount) || 0,
-        totalKpi: m.totalKpi !== undefined ? Number(m.totalKpi) : (Number(m.baseKpi) || 0) * (Number(m.quantity) || 0),
+        totalKpi: m.totalKpi !== undefined && m.totalKpi !== '' && m.totalKpi !== null
+          ? Math.round(Number(m.totalKpi) * 10) / 10
+          : Math.round((Number(m.baseKpi) || 0) * (Number(m.quantity) || 0) * 10) / 10,
         explanation: m.explanation || ''
       }))
     };
@@ -2454,10 +2456,12 @@ app.post('/api/kpi/report', authenticateToken, (req, res) => {
       title: m.title,
       content: m.content || '',
       isOkr: !!m.isOkr,
-      baseKpi: Number(m.baseKpi) || 0,
+      baseKpi: Math.round((Number(m.baseKpi) || 0) * 10) / 10,
       quantity: Number(m.quantity) || 0,
       errorCount: Number(m.errorCount) || 0,
-      totalKpi: m.totalKpi !== undefined ? Number(m.totalKpi) : (Number(m.baseKpi) || 0) * (Number(m.quantity) || 0),
+      totalKpi: m.totalKpi !== undefined && m.totalKpi !== '' && m.totalKpi !== null
+        ? Math.round(Number(m.totalKpi) * 10) / 10
+        : Math.round((Number(m.baseKpi) || 0) * (Number(m.quantity) || 0) * 10) / 10,
       explanation: m.explanation || ''
     }));
 

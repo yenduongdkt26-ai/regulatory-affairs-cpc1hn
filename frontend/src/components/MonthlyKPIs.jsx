@@ -214,13 +214,16 @@ export default function MonthlyKPIs() {
   const calculateRowTotal = (row) => {
     const base = Number(row.baseKpi) || 0;
     const qty = Number(row.quantity) || 0;
+    const val = row.totalKpi !== undefined && row.totalKpi !== '' && row.totalKpi !== null
+      ? Number(row.totalKpi)
+      : base * qty;
     
-    // Check if category is "Điểm trừ" to return negative points
-    if (row.category === "Điểm trừ") {
-      return -Math.abs(row.totalKpi !== undefined && row.totalKpi !== '' ? Number(row.totalKpi) : base * qty);
-    }
+    const rounded = Math.round(val * 10) / 10;
 
-    return row.totalKpi !== undefined && row.totalKpi !== '' ? Number(row.totalKpi) : base * qty;
+    if (row.category === "Điểm trừ") {
+      return -Math.abs(rounded);
+    }
+    return rounded;
   };
 
   // KPI Planning Handlers
@@ -302,11 +305,15 @@ export default function MonthlyKPIs() {
         copy[idx].baseKpi = val === "Điểm trừ" ? 25 : 10;
       }
       
-      // Recalculate totalKpi automatically unless manually overridden
+      // Recalculate totalKpi automatically when baseKpi or quantity changes
       if (field === 'baseKpi' || field === 'quantity') {
         const base = Number(copy[idx].baseKpi) || 0;
         const qty = Number(copy[idx].quantity) || 0;
-        copy[idx].totalKpi = base * qty;
+        copy[idx].totalKpi = Math.round(base * qty * 10) / 10;
+      }
+
+      if (field === 'totalKpi' && val !== '' && val !== null && !isNaN(val)) {
+        copy[idx].totalKpi = Math.round(Number(val) * 10) / 10;
       }
 
       return copy;
@@ -657,7 +664,9 @@ export default function MonthlyKPIs() {
 
   // Calculations for KPI Summary
   const calculateTotalPoints = (rows) => {
-    return rows.reduce((sum, row) => sum + calculateRowTotal(row), 0);
+    if (!Array.isArray(rows)) return 0;
+    const sum = rows.reduce((sum, row) => sum + calculateRowTotal(row), 0);
+    return Math.round(sum * 10) / 10;
   };
 
   const getAchievementRate = (totalPoints, baseTarget) => {
@@ -2049,10 +2058,11 @@ export default function MonthlyKPIs() {
                           <td className="px-3 py-1.5">
                             <input
                               type="number"
+                              step="0.1"
                               required
                               min={0}
                               value={row.baseKpi}
-                              onChange={(e) => handleRowChange(idx, 'baseKpi', Number(e.target.value))}
+                              onChange={(e) => handleRowChange(idx, 'baseKpi', e.target.value === '' ? '' : Number(e.target.value))}
                               className="w-full bg-transparent border-b border-slate-200 outline-none p-1 text-right font-bold"
                             />
                           </td>
@@ -2060,16 +2070,24 @@ export default function MonthlyKPIs() {
                           <td className="px-3 py-1.5">
                             <input
                               type="number"
+                              step="1"
                               required
                               min={0}
                               value={row.quantity}
-                              onChange={(e) => handleRowChange(idx, 'quantity', Number(e.target.value))}
+                              onChange={(e) => handleRowChange(idx, 'quantity', e.target.value === '' ? '' : Number(e.target.value))}
                               className="w-full bg-transparent border-b border-slate-200 outline-none p-1 text-center font-bold text-slate-800"
                             />
                           </td>
-                          {/* row total points */}
-                          <td className="px-3 py-1.5 text-right font-bold text-slate-800">
-                            {calculateRowTotal(row).toLocaleString()}đ
+                          {/* row total points (Auto-calculated but user editable with 1 decimal) */}
+                          <td className="px-3 py-1.5">
+                            <input
+                              type="number"
+                              step="0.1"
+                              required
+                              value={row.totalKpi !== undefined && row.totalKpi !== '' ? row.totalKpi : calculateRowTotal(row)}
+                              onChange={(e) => handleRowChange(idx, 'totalKpi', e.target.value === '' ? '' : Number(e.target.value))}
+                              className="w-full bg-transparent border-b border-slate-200 outline-none p-1 text-right font-extrabold text-slate-800"
+                            />
                           </td>
                           {/* delete row */}
                           <td className="px-2 py-1.5 text-center">
@@ -2311,10 +2329,11 @@ export default function MonthlyKPIs() {
                           <td className="px-3 py-1.5">
                             <input
                               type="number"
+                              step="0.1"
                               required
                               min={0}
                               value={row.baseKpi}
-                              onChange={(e) => handleRowChange(idx, 'baseKpi', Number(e.target.value))}
+                              onChange={(e) => handleRowChange(idx, 'baseKpi', e.target.value === '' ? '' : Number(e.target.value))}
                               className="w-full bg-transparent border-b border-slate-200 outline-none p-1 text-right font-bold"
                             />
                           </td>
@@ -2322,10 +2341,11 @@ export default function MonthlyKPIs() {
                           <td className="px-3 py-1.5">
                             <input
                               type="number"
+                              step="1"
                               required
                               min={0}
                               value={row.quantity}
-                              onChange={(e) => handleRowChange(idx, 'quantity', Number(e.target.value))}
+                              onChange={(e) => handleRowChange(idx, 'quantity', e.target.value === '' ? '' : Number(e.target.value))}
                               className="w-full bg-transparent border-b border-slate-200 outline-none p-1 text-center font-bold text-slate-850"
                             />
                           </td>
@@ -2343,9 +2363,10 @@ export default function MonthlyKPIs() {
                           <td className="px-3 py-1.5">
                             <input
                               type="number"
+                              step="0.1"
                               required
-                              value={row.totalKpi}
-                              onChange={(e) => handleRowChange(idx, 'totalKpi', Number(e.target.value))}
+                              value={row.totalKpi !== undefined && row.totalKpi !== '' ? row.totalKpi : calculateRowTotal(row)}
+                              onChange={(e) => handleRowChange(idx, 'totalKpi', e.target.value === '' ? '' : Number(e.target.value))}
                               className="w-full bg-transparent border-b border-slate-200 outline-none p-1 text-right font-extrabold text-slate-800"
                             />
                           </td>
