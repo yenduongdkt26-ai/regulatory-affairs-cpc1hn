@@ -2424,7 +2424,7 @@ app.post('/api/kpi/plan/approve', authenticateToken, requireAdmin, (req, res) =>
 
 // Submit / Update KPI report (actual values)
 app.post('/api/kpi/report', authenticateToken, (req, res) => {
-  const { recordId, metrics, englishGroup, avgTestScore, trainingQuestion } = req.body;
+  const { recordId, metrics, englishGroup, avgTestScore, trainingQuestion, isDraft } = req.body;
   if (!recordId || !metrics) {
     return res.status(400).json({ error: "Vui lòng điền đầy đủ thông tin báo cáo" });
   }
@@ -2437,11 +2437,11 @@ app.post('/api/kpi/report', authenticateToken, (req, res) => {
     }
 
     const record = kpis[idx];
-    if (record.status !== 'plan_approved' && record.status !== 'report_pending' && record.status !== 'report_rejected') {
+    if (record.status !== 'plan_approved' && record.status !== 'report_draft' && record.status !== 'report_pending' && record.status !== 'report_rejected') {
       return res.status(400).json({ error: "Chỉ được nộp báo cáo khi kế hoạch đã được duyệt" });
     }
 
-    record.status = 'report_pending';
+    record.status = isDraft ? 'report_draft' : 'report_pending';
     record.reportComment = '';
     record.reportApprovedBy = null;
     record.reportApprovedAt = null;
@@ -2462,7 +2462,10 @@ app.post('/api/kpi/report', authenticateToken, (req, res) => {
     }));
 
     writeKpis(kpis);
-    res.json({ message: "Nộp báo cáo KPI tháng thành công!", record });
+    res.json({ 
+      message: isDraft ? "Lưu nháp báo cáo KPI thành công!" : "Nộp báo cáo KPI tháng thành công!", 
+      record 
+    });
   } catch (err) {
     console.error("Error saving KPI report:", err);
     res.status(500).json({ error: "Lỗi hệ thống khi nộp báo cáo KPI" });

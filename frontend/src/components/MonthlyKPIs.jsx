@@ -197,6 +197,8 @@ export default function MonthlyKPIs() {
         return { text: 'Kế hoạch đã duyệt', style: 'bg-blue-50 text-blue-600 border border-blue-200', icon: <CheckCircle2 size={12} /> };
       case 'plan_rejected':
         return { text: 'Kế hoạch bị từ chối', style: 'bg-red-50 text-red-600 border border-red-200', icon: <XCircle size={12} /> };
+      case 'report_draft':
+        return { text: 'Bản nháp báo cáo', style: 'bg-purple-50 text-purple-600 border border-purple-200', icon: <ClipboardList size={12} /> };
       case 'report_pending':
         return { text: 'Chờ duyệt báo cáo', style: 'bg-purple-50 text-purple-600 border border-purple-200', icon: <Hourglass size={12} /> };
       case 'report_approved':
@@ -354,10 +356,12 @@ export default function MonthlyKPIs() {
     setIsReportModalOpen(true);
   };
 
-  const submitReport = async (e) => {
+  const submitReport = async (e, isDraft = false) => {
     if (e) e.preventDefault();
-    if (!window.confirm("Bạn có chắc chắn muốn gửi bản báo cáo KPI này không? Sau khi gửi, bạn không thể tự chỉnh sửa.")) {
-      return;
+    if (!isDraft) {
+      if (!window.confirm("Bạn có chắc chắn muốn gửi bản báo cáo KPI này không? Sau khi gửi, bạn không thể tự chỉnh sửa.")) {
+        return;
+      }
     }
     setError('');
     setSuccess('');
@@ -367,7 +371,8 @@ export default function MonthlyKPIs() {
         metrics: metricsRows,
         englishGroup,
         avgTestScore: avgTestScore !== '' ? Number(avgTestScore) : null,
-        trainingQuestion
+        trainingQuestion,
+        isDraft
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -1121,12 +1126,12 @@ export default function MonthlyKPIs() {
                             Báo cáo thực tế <ArrowRight size={12} />
                           </button>
                         )}
-                        {rec.status === 'report_rejected' && (
+                        {(rec.status === 'report_rejected' || rec.status === 'report_draft') && (
                           <button
                             onClick={() => handleOpenReportModal(rec)}
-                            className="px-3.5 py-1.5 bg-gradient-to-tr from-rose-500 to-red-600 text-white rounded-xl text-xxs font-bold shadow-sm active:scale-95 hover:shadow-md flex items-center gap-1"
+                            className="px-3.5 py-1.5 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white rounded-xl text-xxs font-bold shadow-sm active:scale-95 hover:shadow-md flex items-center gap-1"
                           >
-                            Chỉnh sửa báo cáo <ArrowRight size={12} />
+                            {rec.status === 'report_draft' ? 'Tiếp tục báo cáo (Bản nháp)' : 'Chỉnh sửa báo cáo'} <ArrowRight size={12} />
                           </button>
                         )}
                         {isAdmin && (
@@ -2201,17 +2206,26 @@ export default function MonthlyKPIs() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-bold text-slate-400 uppercase">Khai báo khối lượng và kết quả thực tế</span>
-                  <div className="flex gap-1.5">
-                    {CATEGORIES.map((cat) => (
-                      <button
-                        type="button"
-                        key={cat}
-                        onClick={() => handleAddRow(cat)}
-                        className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg text-xxs font-bold transition-all active:scale-95 border border-purple-100 flex items-center gap-1"
-                      >
-                        <Plus size={10} /> + {cat.split(' ')[0]}
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSortPlanRows}
+                      className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xxs font-bold transition-all active:scale-95 border border-slate-200"
+                    >
+                      Sắp xếp theo nhóm
+                    </button>
+                    <div className="flex gap-1.5">
+                      {CATEGORIES.map((cat) => (
+                        <button
+                          type="button"
+                          key={cat}
+                          onClick={() => handleAddRow(cat)}
+                          className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-lg text-xxs font-bold transition-all active:scale-95 border border-purple-100 flex items-center gap-1"
+                        >
+                          <Plus size={10} /> + {cat.split(' ')[0]}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -2370,6 +2384,13 @@ export default function MonthlyKPIs() {
                   className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-xl transition-all"
                 >
                   Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => submitReport(e, true)}
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl transition-all shadow-sm active:scale-[0.98]"
+                >
+                  Lưu tạm thời (Bản nháp)
                 </button>
                 <button
                   type="submit"
