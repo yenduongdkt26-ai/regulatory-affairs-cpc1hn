@@ -361,6 +361,7 @@ export default function MonthlyKPIs() {
     setError('');
     setSuccess('');
     setActiveRecordForReport(record);
+    setBaseKpiTarget(record.baseKpiTarget || 1300);
     setEnglishGroup(record.englishGroup || '');
     setAvgTestScore(record.avgTestScore !== null ? record.avgTestScore.toString() : '');
     setTrainingQuestion(record.trainingQuestion || '');
@@ -380,6 +381,7 @@ export default function MonthlyKPIs() {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/kpi/report`, {
         recordId: activeRecordForReport.id,
+        baseKpiTarget: Number(baseKpiTarget),
         metrics: metricsRows,
         englishGroup,
         avgTestScore: avgTestScore !== '' ? Number(avgTestScore) : null,
@@ -1697,15 +1699,15 @@ export default function MonthlyKPIs() {
                               {/* Editable: Lý do */}
                               <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                                 {isAdmin ? (
-                                  <input
-                                    type="text"
+                                  <textarea
+                                    rows={1}
                                     placeholder="Lý do..."
                                     value={valReason}
                                     onChange={(e) => handleReviewChange(rec.id, 'commentReason', e.target.value)}
-                                    className="w-full min-w-[150px] px-2 py-0.5 border border-slate-200 focus:border-sky-400 rounded outline-none text-xs"
+                                    className="w-full min-w-[150px] px-2 py-1 border border-slate-200 focus:border-sky-400 rounded outline-none text-xs leading-tight resize-y"
                                   />
                                 ) : (
-                                  <span className="text-slate-500 truncate max-w-[150px] block">{valReason || '—'}</span>
+                                  <span className="text-slate-500 max-w-[150px] block whitespace-pre-line leading-tight">{valReason || '—'}</span>
                                 )}
                               </td>
 
@@ -1715,15 +1717,15 @@ export default function MonthlyKPIs() {
                               {/* Editable: Ý KIẾN PHÒNG */}
                               <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
                                 {isAdmin ? (
-                                  <input
-                                    type="text"
+                                  <textarea
+                                    rows={1}
                                     placeholder="Ý kiến phòng..."
                                     value={valDept}
                                     onChange={(e) => handleReviewChange(rec.id, 'commentDept', e.target.value)}
-                                    className="w-full min-w-[120px] px-2 py-0.5 border border-slate-200 focus:border-sky-400 rounded outline-none text-xs"
+                                    className="w-full min-w-[120px] px-2 py-1 border border-slate-200 focus:border-sky-400 rounded outline-none text-xs leading-tight resize-y"
                                   />
                                 ) : (
-                                  <span className="text-slate-500 truncate max-w-[120px] block">{valDept || '—'}</span>
+                                  <span className="text-slate-500 max-w-[120px] block whitespace-pre-line leading-tight">{valDept || '—'}</span>
                                 )}
                               </td>
 
@@ -1798,14 +1800,16 @@ export default function MonthlyKPIs() {
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] pt-1">
                                         {rec.planComment && (
                                           <div className="p-2.5 bg-amber-50 border border-amber-100 rounded-xl text-amber-800">
-                                            <strong>Ý kiến kế hoạch:</strong> {rec.planComment} 
-                                            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Duyệt bởi: {rec.planApprovedBy}</span>
+                                            <strong className="block mb-0.5">Ý kiến kế hoạch:</strong>
+                                            <div className="whitespace-pre-line leading-relaxed">{rec.planComment}</div>
+                                            <span className="text-[9px] text-slate-400 font-semibold block mt-1">Duyệt bởi: {rec.planApprovedBy}</span>
                                           </div>
                                         )}
                                         {rec.reportComment && (
                                           <div className="p-2.5 bg-indigo-50 border border-indigo-100 rounded-xl text-indigo-800">
-                                            <strong>Ý kiến báo cáo:</strong> {rec.reportComment} 
-                                            <span className="text-[9px] text-slate-400 font-semibold block mt-0.5">Duyệt bởi: {rec.reportApprovedBy}</span>
+                                            <strong className="block mb-0.5">Ý kiến báo cáo:</strong>
+                                            <div className="whitespace-pre-line leading-relaxed">{rec.reportComment}</div>
+                                            <span className="text-[9px] text-slate-400 font-semibold block mt-1">Duyệt bởi: {rec.reportApprovedBy}</span>
                                           </div>
                                         )}
                                       </div>
@@ -1902,12 +1906,12 @@ export default function MonthlyKPIs() {
                     {/* Approval Action Form */}
                     <div className="flex flex-col sm:flex-row items-end gap-3 pt-2">
                       <div className="flex-1 w-full">
-                        <input
-                          type="text"
-                          placeholder="Ý kiến phê duyệt hoặc lý do từ chối..."
+                        <textarea
+                          rows={2}
+                          placeholder="Ý kiến phê duyệt hoặc lý do từ chối (bấm Enter để xuống dòng)..."
                           value={approvalComment}
                           onChange={(e) => setApprovalComment(e.target.value)}
-                          className="w-full px-3 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-indigo-400 rounded-xl outline-none transition-all shadow-inner"
+                          className="w-full px-3 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-indigo-400 rounded-xl outline-none transition-all shadow-inner text-xs resize-y"
                         />
                       </div>
                       <div className="flex gap-2 shrink-0 w-full sm:w-auto">
@@ -2010,9 +2014,9 @@ export default function MonthlyKPIs() {
                       {/* Approval Action Form */}
                       <div className="flex flex-col sm:flex-row items-end gap-3 pt-2">
                         <div className="flex-1 w-full">
-                          <input
-                            type="text"
-                            placeholder="Ý kiến phê duyệt hoặc lý do từ chối báo cáo..."
+                          <textarea
+                            rows={2}
+                            placeholder="Ý kiến phê duyệt hoặc lý do từ chối báo cáo (bấm Enter để xuống dòng)..."
                             value={approvalComment}
                             onChange={(e) => setApprovalComment(e.target.value)}
                             className="w-full px-3 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-purple-400 rounded-xl outline-none transition-all shadow-inner"
@@ -2343,9 +2347,14 @@ export default function MonthlyKPIs() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-2xl border border-slate-150">
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Mục tiêu cơ sở (Target)</label>
-                  <div className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-700 font-bold">
-                    {activeRecordForReport.baseKpiTarget.toLocaleString()}đ
-                  </div>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    value={baseKpiTarget}
+                    onChange={(e) => setBaseKpiTarget(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-purple-400 rounded-xl outline-none font-bold text-slate-800 text-xs"
+                  />
                 </div>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Anh văn nhóm</label>
@@ -2375,7 +2384,7 @@ export default function MonthlyKPIs() {
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1.5">Tổng điểm đạt được</label>
                   <div className="px-3 py-2 bg-white border border-slate-200 rounded-xl text-slate-800 font-extrabold text-sm text-indigo-600">
-                    {calculateTotalPoints(metricsRows).toLocaleString()}đ ({getAchievementRate(calculateTotalPoints(metricsRows), activeRecordForReport.baseKpiTarget)})
+                    {calculateTotalPoints(metricsRows).toLocaleString()}đ ({getAchievementRate(calculateTotalPoints(metricsRows), baseKpiTarget)})
                   </div>
                 </div>
                 <div className="col-span-1 md:col-span-4">

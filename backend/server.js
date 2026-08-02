@@ -2429,7 +2429,7 @@ app.post('/api/kpi/plan/approve', authenticateToken, requireAdmin, (req, res) =>
 
 // Submit / Update KPI report (actual values)
 app.post('/api/kpi/report', authenticateToken, (req, res) => {
-  const { recordId, metrics, englishGroup, avgTestScore, trainingQuestion, isDraft } = req.body;
+  const { recordId, metrics, englishGroup, avgTestScore, trainingQuestion, baseKpiTarget, isDraft } = req.body;
   if (!recordId || !metrics) {
     return res.status(400).json({ error: "Vui lòng điền đầy đủ thông tin báo cáo" });
   }
@@ -2450,6 +2450,9 @@ app.post('/api/kpi/report', authenticateToken, (req, res) => {
     record.reportComment = '';
     record.reportApprovedBy = null;
     record.reportApprovedAt = null;
+    if (baseKpiTarget !== undefined && baseKpiTarget !== null && baseKpiTarget !== '') {
+      record.baseKpiTarget = Number(baseKpiTarget);
+    }
     record.englishGroup = englishGroup || '';
     record.avgTestScore = avgTestScore !== undefined && avgTestScore !== '' ? Number(avgTestScore) : null;
     record.trainingQuestion = trainingQuestion || '';
