@@ -411,7 +411,7 @@ async function fetchAndAggregate() {
       const deadline = parseDeadline(row[cols.deadlineCol]);
       const daysDiff = deadline ? getDaysDiff(deadline, refDate) : null;
       let alarmStatus = null; // 'overdue', '1m', '2m'
-      if (daysDiff !== null) {
+      if (daysDiff !== null && !matched.includes('Khách -EXP')) {
         if (daysDiff < 0) alarmStatus = 'overdue';
         else if (daysDiff <= 30) alarmStatus = '1m';
         else if (daysDiff <= 60) alarmStatus = '2m';
@@ -454,7 +454,7 @@ async function fetchAndAggregate() {
       const deadline = parseDeadline(row[cols.deadlineCol]);
       const daysDiff = deadline ? getDaysDiff(deadline, refDate) : null;
       let alarmStatus = null;
-      if (daysDiff !== null) {
+      if (daysDiff !== null && !matched.includes('Khách -EXP')) {
         if (daysDiff < 0) alarmStatus = 'overdue';
         else if (daysDiff <= 30) alarmStatus = '1m';
         else if (daysDiff <= 60) alarmStatus = '2m';
@@ -497,7 +497,7 @@ async function fetchAndAggregate() {
       const deadline = parseDeadline(row[cols.deadlineCol]);
       const daysDiff = deadline ? getDaysDiff(deadline, refDate) : null;
       let alarmStatus = null;
-      if (daysDiff !== null) {
+      if (daysDiff !== null && !matched.includes('Khách -EXP')) {
         if (daysDiff < 0) alarmStatus = 'overdue';
         else if (daysDiff <= 30) alarmStatus = '1m';
         else if (daysDiff <= 60) alarmStatus = '2m';
@@ -842,6 +842,7 @@ async function fetchAndAggregate() {
   };
 
   [...hsxkData, ...ndkData, ...nsxData].forEach(record => {
+    if (record.inCharge && record.inCharge.includes('Khách -EXP')) return;
     if (record.alarmStatus === 'overdue') {
       exportKPIs.overdue.push(record);
     } else if (record.alarmStatus === '1m') {
