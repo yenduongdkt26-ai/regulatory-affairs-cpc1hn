@@ -98,6 +98,7 @@ export default function ExportDashboard({ data }) {
       item.inCharge.join(', ').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (item.note && item.note.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.country && item.country.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (item.fileType && item.fileType.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (item.classification && item.classification.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   });
@@ -106,7 +107,7 @@ export default function ExportDashboard({ data }) {
     const headers = ["Sản phẩm", "Tên xuất khẩu", "Nước", "Phụ trách", "NV đang xử lý", "Deadline", "Cảnh báo", "Phân loại"];
     const rows = filteredModalData.map(item => {
       const days = item.daysDiff;
-      const alertText = days !== null ? (days < 0 ? `Đã quá hạn ${Math.abs(days)} ngày` : `Còn ${days} ngày`) : '—';
+      const alertText = days !== null ? (days < 0 ? `Quá hạn ${Math.abs(days)} ngày` : `Còn ${days} ngày`) : '—';
       return [
         item.productName,
         item.exportName || '—',
@@ -115,7 +116,7 @@ export default function ExportDashboard({ data }) {
         item.note || '—',
         item.deadline || '—',
         alertText,
-        item.classification || '—'
+        item.fileType || 'HSXK'
       ];
     });
 
@@ -561,13 +562,13 @@ export default function ExportDashboard({ data }) {
                   <table className="w-full table-fixed border-collapse text-left text-xs font-sans">
                     <thead>
                       <tr className="bg-slate-100/90 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-xs">
-                        <th className="w-[22%] px-3 py-3">Sản phẩm</th>
-                        <th className="w-[11%] px-3 py-3">Nước</th>
-                        <th className="w-[15%] px-3 py-3">Phụ trách</th>
-                        <th className="w-[18%] px-3 py-3">NV đang xử lý</th>
+                        <th className="w-[20%] px-3 py-3">Sản phẩm</th>
+                        <th className="w-[10%] px-3 py-3">Nước</th>
+                        <th className="w-[14%] px-3 py-3">Phụ trách</th>
+                        <th className="w-[16%] px-3 py-3">NV đang xử lý</th>
                         <th className="w-[10%] px-3 py-3">Deadline</th>
-                        <th className="w-[14%] px-3 py-3 text-center">Cảnh báo</th>
-                        <th className="w-[10%] px-3 py-3">Phân loại</th>
+                        <th className="w-[15%] px-3 py-3 text-center">Cảnh báo</th>
+                        <th className="w-[15%] px-3 py-3 text-center">Phân loại</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 bg-white">
@@ -577,7 +578,7 @@ export default function ExportDashboard({ data }) {
                         let alertText;
 
                         if (days < 0) {
-                          alertText = `Đã quá hạn ${Math.abs(days)} ngày`;
+                          alertText = `Quá hạn ${Math.abs(days)} ngày`;
                           badgeColor = 'bg-red-100 text-red-700 border border-red-200 font-bold';
                         } else {
                           alertText = `Còn ${days} ngày`;
@@ -589,19 +590,23 @@ export default function ExportDashboard({ data }) {
                         return (
                           <tr key={idx} className="hover:bg-slate-50 transition-colors">
                             <td className="px-3 py-3 align-top break-words">
-                              <div className="font-bold text-slate-800 text-xs">{item.productName}</div>
-                              {item.exportName && <div className="text-xxs text-slate-400 font-medium mt-0.5">{item.exportName}</div>}
+                              <div className="font-bold text-slate-800 text-xs leading-snug">{item.productName}</div>
+                              {item.exportName && <div className="text-xxs text-slate-400 font-medium mt-0.5 leading-snug">{item.exportName}</div>}
                             </td>
-                            <td className="px-3 py-3 align-top font-semibold text-slate-700 break-words">{item.country || '—'}</td>
-                            <td className="px-3 py-3 align-top font-semibold text-slate-700 break-words">{item.inCharge.join(', ')}</td>
-                            <td className="px-3 py-3 align-top font-semibold text-slate-700 leading-normal break-words">{item.note || '—'}</td>
-                            <td className="px-3 py-3 align-top font-semibold text-slate-600 whitespace-nowrap">{item.deadline || '—'}</td>
+                            <td className="px-3 py-3 align-top font-semibold text-slate-700 break-words leading-snug">{item.country || '—'}</td>
+                            <td className="px-3 py-3 align-top font-semibold text-slate-700 break-words leading-snug">{item.inCharge.join(', ')}</td>
+                            <td className="px-3 py-3 align-top font-semibold text-slate-700 leading-snug break-words">{item.note || '—'}</td>
+                            <td className="px-3 py-3 align-top font-semibold text-slate-600 whitespace-nowrap leading-snug">{item.deadline || '—'}</td>
                             <td className="px-3 py-3 align-top text-center">
                               <span className={`px-2.5 py-1 rounded-xl text-xxs inline-block shadow-2xs whitespace-nowrap ${badgeColor}`}>
                                 {alertText}
                               </span>
                             </td>
-                            <td className="px-3 py-3 align-top font-medium text-slate-500 break-words">{item.classification || '—'}</td>
+                            <td className="px-3 py-3 align-top text-center">
+                              <span className="px-2.5 py-1 bg-sky-50 text-sky-700 font-bold rounded-xl text-xxs inline-block border border-sky-200 shadow-2xs whitespace-nowrap">
+                                {item.fileType || 'HSXK'}
+                              </span>
+                            </td>
                           </tr>
                         );
                       })}

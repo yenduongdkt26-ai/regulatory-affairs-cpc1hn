@@ -427,6 +427,7 @@ async function fetchAndAggregate() {
         daysDiff,
         alarmStatus,
         classification: row[cols.classificationCol] ? row[cols.classificationCol].trim() : "",
+        fileType: "HSXK",
         note: cleanNoteVal(row[cols.noteCol])
       });
     }
@@ -470,6 +471,7 @@ async function fetchAndAggregate() {
         daysDiff,
         alarmStatus,
         classification: row[cols.classificationCol] ? row[cols.classificationCol].trim() : "",
+        fileType: "Nhãn đăng ký",
         note: cleanNoteVal(row[cols.noteCol])
       });
     }
@@ -504,7 +506,7 @@ async function fetchAndAggregate() {
       }
 
       nsxData.push({
-        stt: cols.sttCol !== -1 ? row[cols.sttCol] : String(nsxData.length + 1),
+        stt: cols.sttCol !== -1 ? row[cols.sttCol] : String(hsxkData.length + 1),
         inCharge: matched,
         productName: row[cols.productNameCol] ? row[cols.productNameCol].trim() : "",
         exportName: row[cols.exportNameCol] ? row[cols.exportNameCol].trim() : "",
@@ -513,6 +515,7 @@ async function fetchAndAggregate() {
         daysDiff,
         alarmStatus,
         classification: row[cols.classificationCol] ? row[cols.classificationCol].trim() : "",
+        fileType: "Nhãn sản xuất",
         note: cleanNoteVal(row[cols.noteCol])
       });
     }
