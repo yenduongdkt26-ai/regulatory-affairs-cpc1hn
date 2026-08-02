@@ -369,13 +369,15 @@ async function fetchAndAggregate() {
   // Helper to match names and filter
   function getMatchedEmployees(inChargeStr) {
     if (!inChargeStr) return [];
-    // Names might be separated by semicolon or comma
-    const parts = inChargeStr.split(/[;,]/).map(p => p.trim()).filter(p => p);
+    // Names might be separated by semicolon, comma, or slash
+    const parts = inChargeStr.split(/[;,/]/).map(p => p.trim()).filter(p => p);
     const matched = [];
     parts.forEach(part => {
       const normalized = normalizeName(part);
       if (employeeMapping[normalized]) {
         matched.push(employeeMapping[normalized]);
+      } else if (normalized.includes("khach -exp") || normalized.includes("khach exp") || normalized.includes("khach-exp")) {
+        matched.push("Khách -EXP");
       }
     });
     // Return unique matched employees
@@ -395,15 +397,14 @@ async function fetchAndAggregate() {
     for (let i = 1; i < hsxkLines.length; i++) {
       const row = hsxkLines[i];
       if (row.length <= cols.productNameCol || !row[cols.productNameCol]) continue; // needs product name
-      const matched = getMatchedEmployees(row[cols.inChargeCol]);
       
-      // Accumulate workload from raw row
+      const combinedInCharge = [row[cols.inChargeCol], row[cols.noteCol]].filter(Boolean).join("; ");
+      const matched = getMatchedEmployees(combinedInCharge);
+      
+      // Accumulate workload from matched row
       matched.forEach(name => {
         if (exportWorkload[name] !== undefined) exportWorkload[name]++;
       });
-      if (row[cols.inChargeCol] && (row[cols.inChargeCol].toLowerCase().includes('khách -exp') || row[cols.inChargeCol].toLowerCase().includes('khach -exp'))) {
-        exportWorkload['Khách -EXP']++;
-      }
 
       if (matched.length === 0) continue; // remove unauthorized employees
 
@@ -439,15 +440,14 @@ async function fetchAndAggregate() {
     for (let i = 1; i < ndkLines.length; i++) {
       const row = ndkLines[i];
       if (row.length <= cols.productNameCol || !row[cols.productNameCol]) continue;
-      const matched = getMatchedEmployees(row[cols.inChargeCol]);
       
-      // Accumulate workload from raw row
+      const combinedInCharge = [row[cols.inChargeCol], row[cols.noteCol]].filter(Boolean).join("; ");
+      const matched = getMatchedEmployees(combinedInCharge);
+      
+      // Accumulate workload from matched row
       matched.forEach(name => {
         if (exportWorkload[name] !== undefined) exportWorkload[name]++;
       });
-      if (row[cols.inChargeCol] && (row[cols.inChargeCol].toLowerCase().includes('khách -exp') || row[cols.inChargeCol].toLowerCase().includes('khach -exp'))) {
-        exportWorkload['Khách -EXP']++;
-      }
 
       if (matched.length === 0) continue;
 
@@ -483,15 +483,14 @@ async function fetchAndAggregate() {
     for (let i = 1; i < nsxLines.length; i++) {
       const row = nsxLines[i];
       if (row.length <= cols.productNameCol || !row[cols.productNameCol]) continue;
-      const matched = getMatchedEmployees(row[cols.inChargeCol]);
       
-      // Accumulate workload from raw row
+      const combinedInCharge = [row[cols.inChargeCol], row[cols.noteCol]].filter(Boolean).join("; ");
+      const matched = getMatchedEmployees(combinedInCharge);
+      
+      // Accumulate workload from matched row
       matched.forEach(name => {
         if (exportWorkload[name] !== undefined) exportWorkload[name]++;
       });
-      if (row[cols.inChargeCol] && (row[cols.inChargeCol].toLowerCase().includes('khách -exp') || row[cols.inChargeCol].toLowerCase().includes('khach -exp'))) {
-        exportWorkload['Khách -EXP']++;
-      }
 
       if (matched.length === 0) continue;
 
