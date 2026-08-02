@@ -1,5 +1,6 @@
 import { useState, useEffect, Fragment } from 'react';
 import axios from 'axios';
+import * as XLSX from 'xlsx';
 import { API_BASE_URL } from '../config';
 import { 
   ClipboardList, Plus, Trash2, CheckCircle2, XCircle, AlertCircle, 
@@ -879,6 +880,160 @@ export default function MonthlyKPIs() {
     document.body.removeChild(link);
   };
 
+  const handleExportMultiSheetExcel = () => {
+    if (aggregateRecords.length === 0) return;
+
+    try {
+      const wb = XLSX.utils.book_new();
+
+      // 1. Sheet 1: Summary Sheet ("Tổng Quan")
+      const summaryRows = [
+        ["CÔNG TY CỔ PHẦN DƯỢC PHẦN CPC1 HÀ NỘI"],
+        ["PHÒNG ĐĂNG KÝ THUỐC"],
+        [`BÁO CÁO CÔNG VIỆC THÁNG ${filterMonth.split('-').reverse().join('/')}`],
+        [],
+        ["TỔNG KẾT HỒ SƠ NỘP", "Số lượng"],
+        ["HSM", getSummaryVal('hsm')],
+        ["HSBS", getSummaryVal('hsbs')],
+        ["HSTĐ", getSummaryVal('hstd')],
+        ["HSBSTĐ", getSummaryVal('HSBSTĐ')],
+        ["HSGH", getSummaryVal('hsgh')],
+        ["HSBSGH", getSummaryVal('HSBSGH')],
+        ["HSXK + HSBSXK", getSummaryVal('HSXK_HSBSXK')],
+        [],
+        [
+          "STT",
+          "HỌ & TÊN",
+          "KPI Mục tiêu",
+          "Công việc (làm + check)",
+          "Định kỳ",
+          "Phát sinh",
+          "Đào tạo tập trung",
+          "Kiểm tra thường xuyên",
+          "Học tiếng anh",
+          "Điểm trừ",
+          "Tổng điểm đạt",
+          "% Đạt",
+          "Số OKR",
+          "Thưởng OKR",
+          "Thưởng KPI",
+          "Thưởng check HS",
+          "Thưởng/Phạt khác",
+          "Lý do",
+          "Ý KIẾN QL NHÓM",
+          "Ý KIẾN PHÒNG"
+        ]
+      ];
+
+      aggregateRecords.forEach((rec, index) => {
+        const total = calculateTotalPoints(rec.metrics);
+        const valOkr = getReviewVal(rec, 'okrCount');
+        const valRewOkr = getReviewVal(rec, 'rewardOkr');
+        const valRewKpi = getReviewVal(rec, 'rewardKpi');
+        const valRewCheck = getReviewVal(rec, 'rewardCheckHs');
+        const valRewOther = getReviewVal(rec, 'rewardOther');
+        const valReason = getReviewVal(rec, 'commentReason');
+        const valDept = getReviewVal(rec, 'commentDept');
+        const totalReward = Number(valRewOkr) + Number(valRewKpi) + Number(valRewCheck) + Number(valRewOther);
+
+        summaryRows.push([
+          index + 1,
+          rec.employeeName,
+          rec.baseKpiTarget || 1300,
+          getCategoryScore(rec, "Công việc (làm + check)"),
+          getCategoryScore(rec, "Định kỳ"),
+          getCategoryScore(rec, "Phát sinh"),
+          getCategoryScore(rec, "Đào tạo", "Đào tạo tập trung"),
+          getCategoryScore(rec, "Đào tạo", "Kiểm tra thường xuyên"),
+          getCategoryScore(rec, "Đào tạo", "Học tiếng anh"),
+          getCategoryScore(rec, "Điểm trừ"),
+          total,
+          getAchievementRate(total, rec.baseKpiTarget),
+          valOkr,
+          valRewOkr,
+          valRewKpi,
+          valRewCheck,
+          valRewOther,
+          valReason || '',
+          totalReward,
+          valDept || ''
+        ]);
+      });
+
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng Quan");
+
+      // 2. Individual Employee Sheets (One per employee)
+      const usedSheetNames = new Set(["Tổng Quan"]);
+
+      aggregateRecords.forEach((rec, rIdx) => {
+        let rawName = (rec.employeeName || `NV_${rIdx + 1}`).trim();
+        let sheetName = rawName.replace(/[\\/?*:[\]]/g, '').slice(0, 28);
+        if (!sheetName) sheetName = `Sheet_${rIdx + 1}`;
+
+        let uniqueName = sheetName;
+        let count = 1;
+        while (usedSheetNames.has(uniqueName)) {
+          uniqueName = `${sheetName}_${count}`;
+          count++;
+        }
+        usedSheetNames.add(uniqueName);
+
+        const badge = getStatusBadge(rec.status);
+        const empTotal = calculateTotalPoints(rec.metrics);
+
+        const empRows = [
+          ["CÔNG TY CỔ PHẦN DƯỢC PHẦN CPC1 HÀ NỘI"],
+          [`BÁO CÁO KPI THÁNG ${rec.month} - ${rec.employeeName}`],
+          [`Trạng thái phê duyệt: ${badge.text}`],
+          [`Tổ học Tiếng Anh: ${rec.englishGroup || 'Chưa đăng ký'}`, `Điểm kiểm tra trung bình: ${rec.avgTestScore !== null ? rec.avgTestScore : '—'}`],
+          [`Khái quát kết quả học tập: ${rec.trainingQuestion || '—'}`],
+          [],
+          [
+            "STT",
+            "Hạng mục",
+            "Tên chỉ số / công việc",
+            "Nội dung chi tiết",
+            "OKR",
+            "KPI Cơ sở",
+            "Số lượng",
+            "Số lỗi",
+            "Tổng điểm",
+            "Giải trình / Lý do"
+          ]
+        ];
+
+        (rec.metrics || []).forEach((m, mIdx) => {
+          empRows.push([
+            mIdx + 1,
+            m.category,
+            m.title,
+            m.content || '',
+            m.isOkr ? 'V' : '',
+            m.baseKpi,
+            m.quantity,
+            m.errorCount || 0,
+            calculateRowTotal(m),
+            m.explanation || ''
+          ]);
+        });
+
+        empRows.push([]);
+        empRows.push(["", "TỔNG ĐIỂM ĐẠT DỰ KIẾN / THỰC TẾ", "", "", "", "", "", "", empTotal]);
+        empRows.push(["", "KPI MỤC TIÊU THÁNG", "", "", "", "", "", "", rec.baseKpiTarget || 1300]);
+        empRows.push(["", "TỶ LỆ HOÀN THÀNH", "", "", "", "", "", "", getAchievementRate(empTotal, rec.baseKpiTarget)]);
+
+        const wsEmp = XLSX.utils.aoa_to_sheet(empRows);
+        XLSX.utils.book_append_sheet(wb, wsEmp, uniqueName);
+      });
+
+      XLSX.writeFile(wb, `Bao_Cao_KPI_Tong_Thang_${filterMonth}.xlsx`);
+    } catch (err) {
+      console.error("Error exporting multi-sheet Excel:", err);
+      setError("Xuất file Excel thất bại. Vui lòng thử lại.");
+    }
+  };
+
   // Personal Records List
   const myRecords = records.filter(r => r.username === user.username);
   
@@ -1303,12 +1458,23 @@ export default function MonthlyKPIs() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {isAdmin && aggregateRecords.length > 0 && (
-                  <button
-                    onClick={handleExportCSV}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-tr from-emerald-500 to-teal-600 text-white rounded-xl text-xxs font-bold transition-all shadow-sm active:scale-95 hover:shadow-md mr-2"
-                  >
-                    Xuất Excel (CSV)
-                  </button>
+                  <div className="flex items-center gap-2 mr-2">
+                    <button
+                      onClick={handleExportCSV}
+                      className="flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xxs font-bold transition-all shadow-xs border border-slate-200 active:scale-95"
+                      title="Xuất bảng tổng hợp định dạng CSV đơn giản"
+                    >
+                      <span>Bảng tổng (CSV)</span>
+                    </button>
+                    <button
+                      onClick={handleExportMultiSheetExcel}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-tr from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xxs font-bold transition-all shadow-md active:scale-95 hover:shadow-lg"
+                      title="Xuất file Excel gồm 1 sheet Tổng Quan và mỗi nhân viên 1 sheet chi tiết báo cáo"
+                    >
+                      <FileSpreadsheet size={13} />
+                      <span>Xuất Excel Tổng (Mỗi NV 1 Sheet)</span>
+                    </button>
+                  </div>
                 )}
                 <span className="text-xxs font-bold text-slate-500 uppercase">Tháng:</span>
                 <input
