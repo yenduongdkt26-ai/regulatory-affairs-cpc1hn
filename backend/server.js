@@ -2317,7 +2317,7 @@ app.delete('/api/kpi/records/:id', authenticateToken, requireAdmin, (req, res) =
 
 // Submit / Update KPI plan (month format: YYYY-MM)
 app.post('/api/kpi/plan', authenticateToken, (req, res) => {
-  const { month, baseKpiTarget, metrics, englishGroup, avgTestScore, trainingQuestion, isDraft } = req.body;
+  const { month, baseKpiTarget, metrics, englishGroup, avgTestScore, trainingQuestion, employeePlanComment, isDraft } = req.body;
   if (!month || baseKpiTarget === undefined || !metrics) {
     return res.status(400).json({ error: "Vui lòng điền đầy đủ thông tin kế hoạch" });
   }
@@ -2336,19 +2336,22 @@ app.post('/api/kpi/plan', authenticateToken, (req, res) => {
       englishGroup: englishGroup || '',
       avgTestScore: avgTestScore !== undefined && avgTestScore !== '' ? Number(avgTestScore) : null,
       trainingQuestion: trainingQuestion || '',
+      employeePlanComment: employeePlanComment !== undefined ? employeePlanComment : (existingIdx !== -1 ? kpis[existingIdx].employeePlanComment || '' : ''),
       planCreatedAt: new Date().toISOString(),
-      planApprovedBy: null,
-      planApprovedAt: null,
-      planComment: '',
+      planApprovedBy: existingIdx !== -1 ? kpis[existingIdx].planApprovedBy : null,
+      planApprovedAt: existingIdx !== -1 ? kpis[existingIdx].planApprovedAt : null,
+      planComment: existingIdx !== -1 ? kpis[existingIdx].planComment || '' : '',
       reportCreatedAt: existingIdx !== -1 ? kpis[existingIdx].reportCreatedAt : null,
-      reportApprovedBy: null,
-      reportApprovedAt: null,
-      reportComment: '',
+      reportApprovedBy: existingIdx !== -1 ? kpis[existingIdx].reportApprovedBy : null,
+      reportApprovedAt: existingIdx !== -1 ? kpis[existingIdx].reportApprovedAt : null,
+      reportComment: existingIdx !== -1 ? kpis[existingIdx].reportComment || '' : '',
+      employeeReportComment: existingIdx !== -1 ? kpis[existingIdx].employeeReportComment || '' : '',
       metrics: metrics.map(m => ({
         category: m.category,
         title: m.title,
         content: m.content || '',
         isOkr: !!m.isOkr,
+        isCompleted: m.isCompleted !== undefined ? !!m.isCompleted : true,
         baseKpi: Math.round((Number(m.baseKpi) || 0) * 100) / 100,
         quantity: Math.round((Number(m.quantity) || 0) * 100) / 100,
         errorCount: Number(m.errorCount) || 0,
@@ -2429,7 +2432,7 @@ app.post('/api/kpi/plan/approve', authenticateToken, requireAdmin, (req, res) =>
 
 // Submit / Update KPI report (actual values)
 app.post('/api/kpi/report', authenticateToken, (req, res) => {
-  const { recordId, metrics, englishGroup, avgTestScore, trainingQuestion, baseKpiTarget, isDraft } = req.body;
+  const { recordId, metrics, englishGroup, avgTestScore, trainingQuestion, baseKpiTarget, employeeReportComment, isDraft } = req.body;
   if (!recordId || !metrics) {
     return res.status(400).json({ error: "Vui lòng điền đầy đủ thông tin báo cáo" });
   }
@@ -2447,9 +2450,9 @@ app.post('/api/kpi/report', authenticateToken, (req, res) => {
     }
 
     record.status = isDraft ? 'report_draft' : 'report_pending';
-    record.reportComment = '';
-    record.reportApprovedBy = null;
-    record.reportApprovedAt = null;
+    if (employeeReportComment !== undefined) {
+      record.employeeReportComment = employeeReportComment;
+    }
     if (baseKpiTarget !== undefined && baseKpiTarget !== null && baseKpiTarget !== '') {
       record.baseKpiTarget = Number(baseKpiTarget);
     }
@@ -2462,6 +2465,7 @@ app.post('/api/kpi/report', authenticateToken, (req, res) => {
       title: m.title,
       content: m.content || '',
       isOkr: !!m.isOkr,
+      isCompleted: m.isCompleted !== undefined ? !!m.isCompleted : true,
       baseKpi: Math.round((Number(m.baseKpi) || 0) * 100) / 100,
       quantity: Math.round((Number(m.quantity) || 0) * 100) / 100,
       errorCount: Number(m.errorCount) || 0,

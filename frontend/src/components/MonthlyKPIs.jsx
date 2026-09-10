@@ -139,6 +139,8 @@ export default function MonthlyKPIs() {
   const [englishGroup, setEnglishGroup] = useState('');
   const [avgTestScore, setAvgTestScore] = useState('');
   const [trainingQuestion, setTrainingQuestion] = useState('');
+  const [employeePlanComment, setEmployeePlanComment] = useState('');
+  const [employeeReportComment, setEmployeeReportComment] = useState('');
   const [metricsRows, setMetricsRows] = useState([]);
 
   // Approvals Comment state
@@ -213,6 +215,9 @@ export default function MonthlyKPIs() {
 
   // Row KPI calculations
   const calculateRowTotal = (row) => {
+    if (row.isCompleted === false) {
+      return 0;
+    }
     const base = Number(row.baseKpi) || 0;
     const qty = Number(row.quantity) || 0;
     const val = row.totalKpi !== undefined && row.totalKpi !== '' && row.totalKpi !== null
@@ -238,6 +243,7 @@ export default function MonthlyKPIs() {
     setEnglishGroup('');
     setAvgTestScore('');
     setTrainingQuestion('');
+    setEmployeePlanComment('');
     // Prefill with some standard mock metrics matching image style
     setMetricsRows([
       { category: "Công việc (làm + check)", title: "HSM", content: "", isOkr: true, baseKpi: 60, quantity: 1, errorCount: 0, totalKpi: 60, explanation: "" },
@@ -257,6 +263,7 @@ export default function MonthlyKPIs() {
     setEnglishGroup(record.englishGroup || '');
     setAvgTestScore(record.avgTestScore !== null ? record.avgTestScore.toString() : '');
     setTrainingQuestion(record.trainingQuestion || '');
+    setEmployeePlanComment(record.employeePlanComment || '');
     setMetricsRows(record.metrics.map(m => ({ ...m })));
     setIsPlanModalOpen(true);
   };
@@ -342,6 +349,7 @@ export default function MonthlyKPIs() {
         englishGroup,
         avgTestScore,
         trainingQuestion,
+        employeePlanComment,
         isDraft
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -365,7 +373,14 @@ export default function MonthlyKPIs() {
     setEnglishGroup(record.englishGroup || '');
     setAvgTestScore(record.avgTestScore !== null ? record.avgTestScore.toString() : '');
     setTrainingQuestion(record.trainingQuestion || '');
-    setMetricsRows(record.metrics.map(m => ({ ...m })));
+    setEmployeeReportComment(record.employeeReportComment || '');
+
+    // If starting report from approved plan, default isCompleted = false so total score starts at 0 until ticked
+    const isInitialReport = record.status === 'plan_approved';
+    setMetricsRows(record.metrics.map(m => ({
+      ...m,
+      isCompleted: isInitialReport ? false : (m.isCompleted !== undefined ? m.isCompleted : false)
+    })));
     setIsReportModalOpen(true);
   };
 
@@ -386,6 +401,7 @@ export default function MonthlyKPIs() {
         englishGroup,
         avgTestScore: avgTestScore !== '' ? Number(avgTestScore) : null,
         trainingQuestion,
+        employeeReportComment,
         isDraft
       }, {
         headers: { Authorization: `Bearer ${token}` }
@@ -1796,7 +1812,7 @@ export default function MonthlyKPIs() {
                                     </div>
 
                                     {/* Comments */}
-                                    {(rec.planComment || rec.reportComment) && (
+                                    {(rec.planComment || rec.reportComment || rec.employeePlanComment || rec.employeeReportComment) && (
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] pt-1">
                                         {rec.planComment && (
                                           <div className="p-2.5 bg-amber-50 border border-amber-100 rounded-xl text-amber-800">
@@ -1862,6 +1878,25 @@ export default function MonthlyKPIs() {
                         </div>
                         <span className="px-2 py-0.5 rounded bg-amber-50 border border-amber-200 text-amber-600 font-bold uppercase text-[9px]">Chờ duyệt kế hoạch</span>
                       </div>
+
+                      {/* Old Rejection Comment & Employee Explanation */}
+                      {(rec.planComment || rec.employeePlanComment) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl text-xs border border-slate-150">
+                          {rec.planComment && (
+                            <div className="p-2.5 bg-red-50/60 border border-red-100 rounded-lg text-red-900">
+                              <strong className="text-[10px] uppercase font-bold text-red-600 block mb-0.5">Ý kiến từ chối trước đó (Quản lý):</strong>
+                              <div className="whitespace-pre-line leading-relaxed font-medium">{rec.planComment}</div>
+                              {rec.planApprovedBy && <span className="text-[9px] text-slate-400 block mt-1">Duyệt bởi: {rec.planApprovedBy}</span>}
+                            </div>
+                          )}
+                          {rec.employeePlanComment && (
+                            <div className="p-2.5 bg-sky-50/60 border border-sky-100 rounded-lg text-sky-900">
+                              <strong className="text-[10px] uppercase font-bold text-sky-600 block mb-0.5">Giải trình từ Nhân viên:</strong>
+                              <div className="whitespace-pre-line leading-relaxed font-medium">{rec.employeePlanComment}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Metrics List */}
                       <div className="space-y-1">
@@ -1969,6 +2004,25 @@ export default function MonthlyKPIs() {
                         <span>Đặt câu hỏi: {rec.trainingQuestion || 'Không'}</span>
                       </div>
 
+                      {/* Old Rejection Comment & Employee Explanation */}
+                      {(rec.reportComment || rec.employeeReportComment) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-3 bg-slate-50 rounded-xl text-xs border border-slate-150">
+                          {rec.reportComment && (
+                            <div className="p-2.5 bg-red-50/60 border border-red-100 rounded-lg text-red-900">
+                              <strong className="text-[10px] uppercase font-bold text-red-600 block mb-0.5">Lý do từ chối báo cáo trước đó (Quản lý):</strong>
+                              <div className="whitespace-pre-line leading-relaxed font-medium">{rec.reportComment}</div>
+                              {rec.reportApprovedBy && <span className="text-[9px] text-slate-400 block mt-1">Duyệt bởi: {rec.reportApprovedBy}</span>}
+                            </div>
+                          )}
+                          {rec.employeeReportComment && (
+                            <div className="p-2.5 bg-purple-50/60 border border-purple-100 rounded-lg text-purple-900">
+                              <strong className="text-[10px] uppercase font-bold text-purple-600 block mb-0.5">Giải trình báo cáo từ Nhân viên:</strong>
+                              <div className="whitespace-pre-line leading-relaxed font-medium">{rec.employeeReportComment}</div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Metrics List */}
                       <div className="space-y-1">
                         <span className="text-[9px] font-bold text-slate-400 uppercase">Khối lượng công việc chi tiết báo cáo:</span>
@@ -1980,6 +2034,7 @@ export default function MonthlyKPIs() {
                                 <th className="px-3 py-2">Tiêu đề</th>
                                 <th className="px-3 py-2">Nội dung</th>
                                 <th className="px-3 py-2 text-center w-[50px]">OKR</th>
+                                <th className="px-2 py-2 text-center w-[75px]">Hoàn thành</th>
                                 <th className="px-3 py-2 text-right">Số lượng</th>
                                 <th className="px-3 py-2 text-center">Lỗi</th>
                                 <th className="px-3 py-2 text-right">Tổng điểm</th>
@@ -1999,6 +2054,13 @@ export default function MonthlyKPIs() {
                                       onChange={() => handleAdminToggleOkr(rec.id, idx)}
                                       className="h-3.5 w-3.5 text-purple-500 rounded focus:ring-0 cursor-pointer"
                                     />
+                                  </td>
+                                  <td className="px-2 py-2 text-center">
+                                    {m.isCompleted ? (
+                                      <span className="px-1.5 py-0.5 bg-green-100 text-green-700 font-bold rounded text-[9px] inline-block">✓ Xong</span>
+                                    ) : (
+                                      <span className="px-1.5 py-0.5 bg-slate-100 text-slate-400 font-semibold rounded text-[9px] inline-block">—</span>
+                                    )}
                                   </td>
                                   <td className="px-3 py-2 text-right font-bold">{m.quantity}</td>
                                   <td className="px-3 py-2 text-center text-red-500">{m.errorCount || 0}</td>
@@ -2075,8 +2137,8 @@ export default function MonthlyKPIs() {
                 <div className="p-3.5 bg-red-50 border border-red-200/50 rounded-2xl text-xs text-red-800 flex items-start gap-2.5 shadow-sm">
                   <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
                   <div>
-                    <span className="font-bold block mb-0.5">Lý do kế hoạch bị từ chối trước đó:</span>
-                    <p className="text-red-700 font-medium">{activeRecordForPlan.planComment}</p>
+                    <span className="font-bold block mb-0.5">Lý do kế hoạch bị từ chối trước đó (Quản lý):</span>
+                    <p className="text-red-700 font-medium whitespace-pre-line leading-relaxed">{activeRecordForPlan.planComment}</p>
                     <span className="text-[10px] text-slate-400 block mt-1">Người từ chối: {activeRecordForPlan.planApprovedBy}</span>
                   </div>
                 </div>
@@ -2123,6 +2185,21 @@ export default function MonthlyKPIs() {
                     {calculateTotalPoints(metricsRows).toLocaleString()}đ ({getAchievementRate(calculateTotalPoints(metricsRows), baseKpiTarget)})
                   </div>
                 </div>
+              </div>
+
+              {/* Employee Plan Explanation */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 flex items-center gap-1">
+                  <MessageSquare size={13} className="text-sky-500" />
+                  Giải trình / Ghi chú kế hoạch của nhân viên (nếu có)
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Nhập giải trình hoặc ghi chú gửi Quản lý (bấm Enter để xuống dòng)..."
+                  value={employeePlanComment}
+                  onChange={(e) => setEmployeePlanComment(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 focus:bg-white border border-slate-200 focus:border-sky-400 rounded-xl outline-none text-xs leading-relaxed resize-y transition-all"
+                />
               </div>
 
               {/* Dynamic row list */}
@@ -2336,8 +2413,8 @@ export default function MonthlyKPIs() {
                 <div className="p-3.5 bg-red-50 border border-red-200/50 rounded-2xl text-xs text-red-800 flex items-start gap-2.5 shadow-sm">
                   <AlertCircle className="text-red-500 shrink-0 mt-0.5" size={16} />
                   <div>
-                    <span className="font-bold block mb-0.5">Lý do báo cáo bị từ chối trước đó:</span>
-                    <p className="text-red-700 font-medium">{activeRecordForReport.reportComment}</p>
+                    <span className="font-bold block mb-0.5">Lý do báo cáo bị từ chối trước đó (Quản lý):</span>
+                    <p className="text-red-700 font-medium whitespace-pre-line leading-relaxed">{activeRecordForReport.reportComment}</p>
                     <span className="text-[10px] text-slate-400 block mt-1">Người từ chối: {activeRecordForReport.reportApprovedBy}</span>
                   </div>
                 </div>
@@ -2397,6 +2474,19 @@ export default function MonthlyKPIs() {
                     className="w-full px-3 py-2.5 bg-white border border-slate-200 focus:border-purple-400 rounded-xl outline-none"
                   />
                 </div>
+                <div className="col-span-1 md:col-span-4">
+                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+                    <MessageSquare size={13} className="text-purple-500" />
+                    Giải trình / Ghi chú báo cáo của nhân viên (nếu có)
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Nhập giải trình hoặc ghi chú bổ sung cho báo cáo thực tế tháng này (bấm Enter để xuống dòng)..."
+                    value={employeeReportComment}
+                    onChange={(e) => setEmployeeReportComment(e.target.value)}
+                    className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-purple-400 rounded-xl outline-none text-xs leading-relaxed resize-y transition-all"
+                  />
+                </div>
               </div>
 
               {/* Dynamic row list for reporting actuals */}
@@ -2432,9 +2522,10 @@ export default function MonthlyKPIs() {
                     <thead className="bg-slate-50 text-slate-500 font-extrabold uppercase">
                       <tr>
                         <th className="px-3 py-2.5 w-[150px]">Đầu việc</th>
-                        <th className="px-3 py-2.5 w-[180px]">Tiêu đề</th>
-                        <th className="px-3 py-2.5 w-[180px]">Nội dung</th>
+                        <th className="px-3 py-2.5 w-[170px]">Tiêu đề</th>
+                        <th className="px-3 py-2.5 w-[170px]">Nội dung</th>
                         <th className="px-2 py-2.5 text-center w-[40px]">OKR</th>
+                        <th className="px-2 py-2.5 text-center w-[75px] bg-purple-100/60 text-purple-800 font-extrabold">Hoàn thành</th>
                         <th className="px-3 py-2.5 text-right w-[70px]">KPI cơ sở</th>
                         <th className="px-3 py-2.5 text-center w-[75px]">Số lượng thực tế</th>
                         <th className="px-3 py-2.5 text-center w-[60px]">Lỗi</th>
@@ -2502,6 +2593,16 @@ export default function MonthlyKPIs() {
                               disabled={activeRecordForReport && activeRecordForReport.status === 'report_rejected'}
                               onChange={(e) => handleRowChange(idx, 'isOkr', e.target.checked)}
                               className="h-3.5 w-3.5 text-sky-500 rounded focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed"
+                            />
+                          </td>
+                          {/* isCompleted */}
+                          <td className="px-2 py-1.5 text-center bg-purple-50/30">
+                            <input
+                              type="checkbox"
+                              checked={!!row.isCompleted}
+                              onChange={(e) => handleRowChange(idx, 'isCompleted', e.target.checked)}
+                              className="h-4 w-4 text-purple-600 rounded focus:ring-purple-400 cursor-pointer accent-purple-600"
+                              title="Tick chọn nếu công việc này đã hoàn thành trong tháng"
                             />
                           </td>
                           {/* baseKpi */}
