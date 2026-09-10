@@ -1759,28 +1759,60 @@ function serializeDossierDataForAI(resultData) {
   return context;
 }
 
-// Auto-adaptive Gemini model picker
+// Auto-adaptive Gemini model picker & fallback helper
 let selectedGeminiModel = null;
+
+async function callGeminiChatWithFallback(genAI, systemInstruction, history, message) {
+  const candidateModels = [
+    "gemini-1.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-pro",
+    "gemini-2.5-flash"
+  ];
+
+  let lastError = null;
+
+  for (const modelName of candidateModels) {
+    try {
+      const model = genAI.getGenerativeModel({ 
+        model: modelName,
+        systemInstruction: systemInstruction
+      });
+
+      const chat = model.startChat({ history: history || [] });
+      const result = await chat.sendMessage(message);
+      const text = result.response.text();
+      if (text && text.trim().length > 0) {
+        selectedGeminiModel = modelName;
+        return text;
+      }
+    } catch (err) {
+      console.warn(`[server.js] Gemini model '${modelName}' failed (${err.message}). Retrying with next fallback model...`);
+      lastError = err;
+    }
+  }
+
+  selectedGeminiModel = null;
+  throw lastError || new Error("All Gemini model candidates failed.");
+}
 
 async function getAvailableGeminiModel(genAI) {
   if (selectedGeminiModel) return selectedGeminiModel;
   
   try {
     const list = await genAI.listModels();
-    // Find first flash or pro model that supports generateContent
     const candidates = list.models.filter(m => 
       m.supportedMethods && 
       m.supportedMethods.includes('generateContent') && 
-      (m.name.includes('gemini-2.5-flash') || m.name.includes('gemini-1.5-flash') || m.name.includes('gemini-2.0-flash'))
+      (m.name.includes('gemini-1.5-flash') || m.name.includes('gemini-2.0-flash') || m.name.includes('gemini-2.5-flash'))
     );
     
     if (candidates.length > 0) {
-      // Sort candidates to prioritize newer flash models for speed (2.5-flash -> 2.0-flash -> 1.5-flash)
       candidates.sort((a, b) => {
         const getScore = (name) => {
-          if (name.includes('gemini-2.5-flash')) return 3;
+          if (name.includes('gemini-1.5-flash')) return 3;
           if (name.includes('gemini-2.0-flash')) return 2;
-          if (name.includes('gemini-1.5-flash')) return 1;
+          if (name.includes('gemini-2.5-flash')) return 1;
           return 0;
         };
         return getScore(b.name) - getScore(a.name);
@@ -1789,18 +1821,11 @@ async function getAvailableGeminiModel(genAI) {
       console.log(`Auto-selected Gemini model: ${selectedGeminiModel}`);
       return selectedGeminiModel;
     }
-
-    const anyGen = list.models.find(m => m.supportedMethods && m.supportedMethods.includes('generateContent'));
-    if (anyGen) {
-      selectedGeminiModel = anyGen.name.replace('models/', '');
-      console.log(`Auto-selected Gemini model (fallback): ${selectedGeminiModel}`);
-      return selectedGeminiModel;
-    }
   } catch (err) {
-    console.error("Failed to list models, using default gemini-2.5-flash:", err.message);
+    console.error("Failed to list models, using fallback gemini-1.5-flash:", err.message);
   }
 
-  selectedGeminiModel = "gemini-2.5-flash";
+  selectedGeminiModel = "gemini-1.5-flash";
   return selectedGeminiModel;
 }
 
@@ -1974,21 +1999,12 @@ HƯỚNG DẪN TRẢ LỜI NGHIÊM NGẶT (RẤT QUAN TRỌNG):
 4. QUY TẮC PHÂN BỔ HỒ SƠ MỚI CHO HỢP LÝ: Khi người dùng hỏi cần phân thêm hồ sơ mới cho ai (hoặc ai nên nhận thêm việc), bạn bắt buộc phải kiểm tra dữ liệu và đề xuất người đang phụ trách ÍT HỒ SƠ ĐANG LÀM NHẤT (tổng số hồ sơ đang phụ trách là ít nhất). Tuyệt đối KHÔNG gợi ý phân việc cho người đang có nhiều hồ sơ quá hạn hoặc sắp đến hạn nhất. Giải thích rõ lý do gợi ý (ví dụ: Số lượng hồ sơ hiện tại đang phụ trách, số lượng hồ sơ quá hạn).
 5. HƯỚNG DẪN LÊN KẾ HOẠCH LÀM VIỆC (NGÀY/TUẦN/THÁNG): Khi người dùng yêu cầu lập kế hoạch làm việc (cho bản thân họ hoặc cho cả phòng), hãy lọc ra các hồ sơ có thời hạn (deadlines) và cảnh báo quá hạn (daysDiff). Sắp xếp theo thứ tự ưu tiên: Hồ sơ đã quá hạn (cần giải quyết ngay trong ngày/tuần) -> Hồ sơ hạn dưới 1 tháng (cần làm trong tuần/tháng) -> Hồ sơ hạn 1 - 2 tháng. Trình bày kế hoạch một cách khoa học, rõ ràng.`;
 
-        const modelName = await getAvailableGeminiModel(genAI);
-        const model = genAI.getGenerativeModel({ 
-          model: modelName,
-          systemInstruction: systemInstruction
-        });
-
-        const chat = model.startChat({
-          history: cleanedHistory
-        });
-
-        const result = await chat.sendMessage(message);
-        replyText = result.response.text();
+        replyText = await callGeminiChatWithFallback(genAI, systemInstruction, cleanedHistory, message);
       } catch (err) {
-        console.error("Gemini API Dossier Query Error:", err);
-        replyText = `Không thể kết nối dịch vụ AI (${err.message}). Vui lòng thử lại sau giây lát.`;
+        console.error("Gemini API Dossier Query Error, using structured offline summary fallback:", err.message);
+        replyText = `🤖 **Trợ lý Hồ sơ AI (Chế độ dữ liệu trực tiếp)**\n\n` +
+          `*(Máy chủ AI Google hiện đang quá tải hoặc tạm thời gián đoạn kết nối. Dưới đây là thông tin trích xuất trực tiếp từ dữ liệu hồ sơ của bạn:)*\n\n` +
+          `${dossierContext.substring(0, 1500)}${dossierContext.length > 1500 ? '\n\n*(Xem thêm chi tiết tại giao diện bảng Quản lý Hồ sơ)*' : ''}`;
       }
     } else {
       replyText = "Hệ thống AI chưa được cấu hình khóa API (GEMINI_API_KEY). Vui lòng cấu hình biến môi trường này để kích hoạt Chatbot.";
@@ -2107,20 +2123,9 @@ Yêu cầu bắt buộc về định dạng câu trả lời bằng tiếng Vi�
    - **Cảnh báo:** (Nếu ngữ cảnh chứa văn bản có tình trạng hiệu lực 'chưa xác định', bạn bắt buộc phải ghi rõ cảnh báo: "Lưu ý: Văn bản [Tên văn bản] hiện đang ở tình trạng chưa xác định hiệu lực pháp lý hoặc chưa chính thức có hiệu lực, vui lòng kiểm chứng kỹ trước khi áp dụng thực tế"). Nếu không có văn bản chưa xác định nào, bỏ qua phần này hoặc ghi "Không có".
 2. Nếu trong ngữ cảnh trên KHÔNG chứa bất kỳ thông tin nào liên quan đến câu hỏi hoặc không thể tìm thấy căn cứ phù hợp để trả lời, bạn bắt buộc phải trả lời nguyên văn câu sau: "Chưa tìm thấy căn cứ phù hợp trong kho văn bản." Không thêm bớt bất kỳ từ nào khác.`;
 
-        const modelName = await getAvailableGeminiModel(genAI);
-        const model = genAI.getGenerativeModel({ 
-          model: modelName,
-          systemInstruction: systemInstruction
-        });
-
-        const chat = model.startChat({
-          history: formattedHistory
-        });
-
-        const result = await chat.sendMessage(message);
-        replyText = result.response.text();
+        replyText = await callGeminiChatWithFallback(genAI, systemInstruction, formattedHistory, message);
       } catch (err) {
-        console.error("Gemini API RAG Query Error, falling back to offline template:", err);
+        console.error("Gemini API RAG Query Error, falling back to offline template:", err.message);
       }
     }
 

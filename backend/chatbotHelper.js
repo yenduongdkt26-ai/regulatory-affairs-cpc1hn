@@ -129,6 +129,43 @@ function generateOfflineResponse(message, matchedCats) {
   return response;
 }
 
+async function callGeminiChatWithFallback(genAI, systemInstruction, history, message) {
+  const candidateModels = [
+    "gemini-1.5-flash",
+    "gemini-2.0-flash",
+    "gemini-1.5-pro",
+    "gemini-2.5-flash"
+  ];
+
+  let lastError = null;
+
+  const formattedHistory = (history || []).map(h => ({
+    role: h.sender === 'user' ? 'user' : 'model',
+    parts: [{ text: h.text }]
+  }));
+
+  for (const modelName of candidateModels) {
+    try {
+      const model = genAI.getGenerativeModel({ 
+        model: modelName,
+        systemInstruction: systemInstruction
+      });
+
+      const chat = model.startChat({ history: formattedHistory });
+      const result = await chat.sendMessage(message);
+      const text = result.response.text();
+      if (text && text.trim().length > 0) {
+        return text;
+      }
+    } catch (err) {
+      console.warn(`[chatbotHelper] Gemini model '${modelName}' failed (${err.message}). Trying next fallback model...`);
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error("All Gemini model candidates failed.");
+}
+
 async function queryChatbot(message, history = []) {
   const matchedCats = identifyCategories(message, history);
   const apiKey = process.env.GEMINI_API_KEY;
@@ -158,26 +195,9 @@ Yêu cầu trả lời:
 5. Nếu câu hỏi không liên quan trực tiếp đến các thông tin trên hoặc nằm ngoài cơ sở dữ liệu, hãy trả lời lịch sự và hướng dẫn họ liên hệ cơ quan quản lý hoặc ban chuyên môn của công ty.
 6. KHÔNG tự bịa đặt thông tin.`;
 
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      systemInstruction: systemInstruction
-    });
-
-    // Format chat history to Gemini SDK format
-    const formattedHistory = (history || []).map(h => ({
-      role: h.sender === 'user' ? 'user' : 'model',
-      parts: [{ text: h.text }]
-    }));
-
-    // Start a chat session with memory
-    const chat = model.startChat({
-      history: formattedHistory
-    });
-
-    const result = await chat.sendMessage(message);
-    return result.response.text();
+    return await callGeminiChatWithFallback(genAI, systemInstruction, history, message);
   } catch (error) {
-    console.error("Gemini API Error, falling back to offline mode:", error);
+    console.error("Gemini API Error, falling back to offline mode:", error.message);
     return generateOfflineResponse(message, matchedCats);
   }
 }
