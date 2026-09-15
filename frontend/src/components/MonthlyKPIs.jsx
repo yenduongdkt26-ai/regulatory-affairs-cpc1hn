@@ -151,6 +151,34 @@ export default function MonthlyKPIs() {
   const [summaryCounts, setSummaryCounts] = useState({});
   const [isSummaryEdited, setIsSummaryEdited] = useState(false);
 
+  // Collapsible personal monthly records state
+  const [collapsedPersonalRecords, setCollapsedPersonalRecords] = useState({});
+
+  const getCurrentMonthStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  const isRecordCollapsed = (rec) => {
+    if (collapsedPersonalRecords[rec.id] !== undefined) {
+      return collapsedPersonalRecords[rec.id];
+    }
+    const currentMonthStr = getCurrentMonthStr();
+    const isApproved = rec.status === 'report_approved' || rec.status === 'plan_approved';
+    if (isApproved && rec.month !== currentMonthStr) {
+      return true;
+    }
+    return false;
+  };
+
+  const togglePersonalRecordCollapse = (rec) => {
+    const currentVal = isRecordCollapsed(rec);
+    setCollapsedPersonalRecords(prev => ({
+      ...prev,
+      [rec.id]: !currentVal
+    }));
+  };
+
   // Aggregate Tab States
   const [filterMonth, setFilterMonth] = useState(() => {
     const d = new Date();
@@ -1253,159 +1281,247 @@ export default function MonthlyKPIs() {
               <p className="text-slate-400 text-xs mt-1">Bấm nút "Lập kế hoạch KPI mới" ở góc phải để bắt đầu tháng của bạn</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4">
-              {myRecords.map((rec) => {
-                const totalPoints = calculateTotalPoints(rec.metrics);
-                const badge = getStatusBadge(rec.status);
-                return (
-                  <div key={rec.id} className="glass-card p-5 rounded-2xl border border-white/60 shadow-sm bg-white/40 hover:bg-white/60 transition-all space-y-4">
-                    
-                    {/* Header info */}
-                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 pb-3 border-b border-slate-100/50">
-                      <div className="flex items-center gap-3">
-                        <Calendar size={18} className="text-sky-500" />
-                        <div>
-                          <h3 className="font-bold text-slate-800 text-base leading-tight">Tháng {rec.month}</h3>
-                          <span className="text-[10px] text-slate-400 font-semibold">Tạo ngày: {new Date(rec.planCreatedAt).toLocaleDateString('vi-VN')}</span>
+            <div className="space-y-3">
+              {/* Bulk Toggle Bar */}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs text-slate-500 font-semibold">
+                  Hiển thị <strong>{myRecords.length}</strong> báo cáo / kế hoạch tháng
+                </span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = {};
+                      myRecords.forEach(r => { next[r.id] = true; });
+                      setCollapsedPersonalRecords(next);
+                    }}
+                    className="text-[11px] font-bold text-slate-600 hover:text-sky-600 bg-white/60 hover:bg-white px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-xs transition-all"
+                  >
+                    Thu gọn tất cả
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = {};
+                      myRecords.forEach(r => { next[r.id] = false; });
+                      setCollapsedPersonalRecords(next);
+                    }}
+                    className="text-[11px] font-bold text-slate-600 hover:text-sky-600 bg-white/60 hover:bg-white px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-xs transition-all"
+                  >
+                    Mở rộng tất cả
+                  </button>
+                </div>
+              </div>
+
+              {/* Records List */}
+              <div className="grid grid-cols-1 gap-3">
+                {myRecords.map((rec) => {
+                  const totalPoints = calculateTotalPoints(rec.metrics);
+                  const badge = getStatusBadge(rec.status);
+                  const currentMonthStr = getCurrentMonthStr();
+                  const isCurrentMonth = rec.month === currentMonthStr;
+                  const isCollapsed = isRecordCollapsed(rec);
+
+                  return (
+                    <div 
+                      key={rec.id} 
+                      className={`glass-card rounded-2xl border border-white/60 shadow-sm bg-white/40 hover:bg-white/70 transition-all duration-200 ${
+                        isCollapsed ? 'p-4' : 'p-5 space-y-4'
+                      }`}
+                    >
+                      {/* Card Header Bar (Click to toggle collapse/expand) */}
+                      <div 
+                        onClick={() => togglePersonalRecordCollapse(rec)}
+                        className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 cursor-pointer select-none"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <button 
+                            type="button"
+                            className="p-1 rounded-lg bg-slate-100/80 text-slate-500 hover:text-sky-600 hover:bg-sky-50 transition-colors"
+                            title={isCollapsed ? "Mở rộng chi tiết" : "Thu gọn"}
+                          >
+                            {isCollapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
+                          </button>
+                          <Calendar size={18} className="text-sky-500 shrink-0" />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-bold text-slate-800 text-base leading-tight">Tháng {rec.month}</h3>
+                              {isCurrentMonth && (
+                                <span className="px-2 py-0.5 rounded-md text-[9px] font-bold bg-sky-100 text-sky-700 uppercase border border-sky-250/50">
+                                  Tháng hiện tại
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-400 font-semibold">Tạo ngày: {new Date(rec.planCreatedAt).toLocaleDateString('vi-VN')}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-wrap" onClick={(e) => e.stopPropagation()}>
+                          {/* Quick inline summary specs when collapsed */}
+                          {isCollapsed && (
+                            <div className="hidden md:flex items-center gap-3 mr-2 text-xs bg-slate-50/80 px-3 py-1 rounded-xl border border-slate-200/60 shadow-inner">
+                              <div>
+                                <span className="text-[9px] text-slate-400 font-bold uppercase block">Target</span>
+                                <strong className="text-slate-700">{rec.baseKpiTarget.toLocaleString()}</strong>
+                              </div>
+                              <div className="h-4 w-px bg-slate-200" />
+                              <div>
+                                <span className="text-[9px] text-slate-400 font-bold uppercase block">Tổng điểm</span>
+                                <strong className="text-slate-800">{totalPoints.toLocaleString()}</strong>
+                              </div>
+                              <div className="h-4 w-px bg-slate-200" />
+                              <div>
+                                <span className="text-[9px] text-slate-400 font-bold uppercase block">Tỷ lệ</span>
+                                <strong className={totalPoints >= rec.baseKpiTarget ? 'text-green-600' : 'text-amber-600'}>
+                                  {getAchievementRate(totalPoints, rec.baseKpiTarget)}
+                                </strong>
+                              </div>
+                            </div>
+                          )}
+
+                          <span className={`px-2.5 py-1 rounded-lg text-xxs font-bold flex items-center gap-1.5 uppercase ${badge.style}`}>
+                            {badge.icon}
+                            {badge.text}
+                          </span>
+
+                          {/* Export Buttons */}
+                          {rec.status !== 'plan_draft' && (
+                            <>
+                              <button
+                                onClick={() => handleExportRecordCSV(rec)}
+                                className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-250/30 rounded-xl text-xxs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-sm"
+                                title="Xuất tệp Excel (.csv)"
+                              >
+                                <FileSpreadsheet size={12} />
+                                Xuất Excel
+                              </button>
+                              <button
+                                onClick={() => handleExportRecordPDF(rec)}
+                                className="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-250/30 rounded-xl text-xxs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-sm"
+                                title="In hoặc Xuất tệp PDF"
+                              >
+                                <FileText size={12} />
+                                Xuất PDF
+                              </button>
+                            </>
+                          )}
+
+                          {/* Report/Plan Edit Action Triggers */}
+                          {(rec.status === 'plan_rejected' || rec.status === 'plan_draft') && (
+                            <button
+                              onClick={() => handleOpenEditPlanModal(rec)}
+                              className="px-3.5 py-1.5 bg-gradient-to-tr from-amber-500 to-amber-600 text-white rounded-xl text-xxs font-bold shadow-sm active:scale-95 hover:shadow-md flex items-center gap-1"
+                            >
+                              Chỉnh sửa kế hoạch <ArrowRight size={12} />
+                            </button>
+                          )}
+                          {rec.status === 'plan_approved' && (
+                            <button
+                              onClick={() => handleOpenReportModal(rec)}
+                              className="px-3.5 py-1.5 bg-gradient-to-tr from-sky-500 to-indigo-500 text-white rounded-xl text-xxs font-bold shadow-sm active:scale-95 hover:shadow-md flex items-center gap-1"
+                            >
+                              Báo cáo thực tế <ArrowRight size={12} />
+                            </button>
+                          )}
+                          {(rec.status === 'report_rejected' || rec.status === 'report_draft') && (
+                            <button
+                              onClick={() => handleOpenReportModal(rec)}
+                              className="px-3.5 py-1.5 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white rounded-xl text-xxs font-bold shadow-sm active:scale-95 hover:shadow-md flex items-center gap-1"
+                            >
+                              {rec.status === 'report_draft' ? 'Tiếp tục báo cáo (Bản nháp)' : 'Chỉnh sửa báo cáo'} <ArrowRight size={12} />
+                            </button>
+                          )}
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDeleteRecord(rec.id, rec.month, rec.employeeName)}
+                              className="p-1.5 text-red-500 hover:text-red-700 rounded-xl bg-red-50 hover:bg-red-100 transition-all flex items-center justify-center shadow-sm"
+                              title="Xóa kế hoạch/báo cáo"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className={`px-2.5 py-1 rounded-lg text-xxs font-bold flex items-center gap-1.5 uppercase ${badge.style}`}>
-                          {badge.icon}
-                          {badge.text}
-                        </span>
-                        {/* Export Buttons */}
-                        {rec.status !== 'plan_draft' && (
-                          <>
-                            <button
-                              onClick={() => handleExportRecordCSV(rec)}
-                              className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-250/30 rounded-xl text-xxs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-sm"
-                              title="Xuất tệp Excel (.csv)"
-                            >
-                              <FileSpreadsheet size={12} />
-                              Xuất Excel
-                            </button>
-                            <button
-                              onClick={() => handleExportRecordPDF(rec)}
-                              className="px-2.5 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-250/30 rounded-xl text-xxs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-sm"
-                              title="In hoặc Xuất tệp PDF"
-                            >
-                              <FileText size={12} />
-                              Xuất PDF
-                            </button>
-                          </>
-                        )}
-                        {/* Report/Plan Edit Action Triggers */}
-                        {(rec.status === 'plan_rejected' || rec.status === 'plan_draft') && (
-                          <button
-                            onClick={() => handleOpenEditPlanModal(rec)}
-                            className="px-3.5 py-1.5 bg-gradient-to-tr from-amber-500 to-amber-600 text-white rounded-xl text-xxs font-bold shadow-sm active:scale-95 hover:shadow-md flex items-center gap-1"
-                          >
-                            Chỉnh sửa kế hoạch <ArrowRight size={12} />
-                          </button>
-                        )}
-                        {rec.status === 'plan_approved' && (
-                          <button
-                            onClick={() => handleOpenReportModal(rec)}
-                            className="px-3.5 py-1.5 bg-gradient-to-tr from-sky-500 to-indigo-500 text-white rounded-xl text-xxs font-bold shadow-sm active:scale-95 hover:shadow-md flex items-center gap-1"
-                          >
-                            Báo cáo thực tế <ArrowRight size={12} />
-                          </button>
-                        )}
-                        {(rec.status === 'report_rejected' || rec.status === 'report_draft') && (
-                          <button
-                            onClick={() => handleOpenReportModal(rec)}
-                            className="px-3.5 py-1.5 bg-gradient-to-tr from-purple-500 to-indigo-600 text-white rounded-xl text-xxs font-bold shadow-sm active:scale-95 hover:shadow-md flex items-center gap-1"
-                          >
-                            {rec.status === 'report_draft' ? 'Tiếp tục báo cáo (Bản nháp)' : 'Chỉnh sửa báo cáo'} <ArrowRight size={12} />
-                          </button>
-                        )}
-                        {isAdmin && (
-                          <button
-                            onClick={() => handleDeleteRecord(rec.id, rec.month, rec.employeeName)}
-                            className="p-1.5 text-red-500 hover:text-red-700 rounded-xl bg-red-50 hover:bg-red-100 transition-all flex items-center justify-center shadow-sm"
-                            title="Xóa kế hoạch/báo cáo"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        )}
-                      </div>
+
+                      {/* Expanded Content Details */}
+                      {!isCollapsed && (
+                        <div className="space-y-4 pt-3 border-t border-slate-100/80 animate-fade-in">
+                          {/* Score summary panel */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-white/50 rounded-2xl border border-slate-150 shadow-inner">
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold block uppercase">KPI Cơ Sở Target</span>
+                              <strong className="text-sm font-bold text-slate-800">{rec.baseKpiTarget.toLocaleString()}</strong>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold block uppercase">Tổng điểm đạt được</span>
+                              <strong className="text-sm font-bold text-slate-800">{totalPoints.toLocaleString()}</strong>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold block uppercase">Tỷ lệ hoàn thành</span>
+                              <strong className={`text-sm font-bold ${totalPoints >= rec.baseKpiTarget ? 'text-green-600' : 'text-amber-600'}`}>
+                                {getAchievementRate(totalPoints, rec.baseKpiTarget)}
+                              </strong>
+                            </div>
+                            <div>
+                              <span className="text-[10px] text-slate-400 font-bold block uppercase">Anh văn / Kiểm tra</span>
+                              <strong className="text-sm font-bold text-slate-800">
+                                Nhóm {rec.englishGroup || 'N/A'} {rec.avgTestScore !== null ? `| ${rec.avgTestScore}đ` : ''}
+                              </strong>
+                            </div>
+                          </div>
+
+                          {/* Admin Comments */}
+                          {rec.planComment && (
+                            <div className="p-3 bg-amber-50 border border-amber-250/50 rounded-xl text-xs text-amber-800">
+                              <strong>Ý kiến kế hoạch:</strong> {rec.planComment} <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Người duyệt: {rec.planApprovedBy}</span>
+                            </div>
+                          )}
+                          {rec.reportComment && (
+                            <div className="p-3 bg-indigo-50 border border-indigo-250/50 rounded-xl text-xs text-indigo-800">
+                              <strong>Ý kiến báo cáo:</strong> {rec.reportComment} <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Người duyệt: {rec.reportApprovedBy}</span>
+                            </div>
+                          )}
+
+                          {/* Metrics detail dropdown details */}
+                          <div className="space-y-1.5">
+                            <span className="text-[10px] font-bold text-slate-400 block uppercase">Danh mục chi tiết công việc ({rec.metrics.length})</span>
+                            <div className="overflow-x-auto border border-slate-100 rounded-xl shadow-sm">
+                              <table className="min-w-full divide-y divide-slate-100 text-left text-xxs">
+                                <thead className="bg-slate-50 text-slate-500 font-extrabold uppercase">
+                                  <tr>
+                                    <th className="px-3 py-2">Đầu việc</th>
+                                    <th className="px-3 py-2">Tiêu đề</th>
+                                    <th className="px-3 py-2">Nội dung</th>
+                                    <th className="px-2 py-2 text-center">OKR</th>
+                                    <th className="px-3 py-2 text-right">KPI Cơ Sở</th>
+                                    <th className="px-3 py-2 text-center">Số lượng</th>
+                                    <th className="px-3 py-2 text-center">Lỗi</th>
+                                    <th className="px-3 py-2 text-right">Tổng điểm</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 bg-white text-slate-600">
+                                  {rec.metrics.map((m, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/50">
+                                      <td className="px-3 py-2 font-bold">{m.category}</td>
+                                      <td className="px-3 py-2 font-semibold text-slate-800">{m.title}</td>
+                                      <td className="px-3 py-2 max-w-xs truncate">{m.content}</td>
+                                      <td className="px-2 py-2 text-center font-bold text-sky-600">{m.isOkr ? 'OKR' : ''}</td>
+                                      <td className="px-3 py-2 text-right">{m.baseKpi}</td>
+                                      <td className="px-3 py-2 text-center font-semibold">{m.quantity}</td>
+                                      <td className="px-3 py-2 text-center text-red-500">{m.errorCount || 0}</td>
+                                      <td className="px-3 py-2 text-right font-bold text-slate-800">{calculateRowTotal(m)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
-
-                    {/* Score summary panel */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 p-4 bg-white/50 rounded-2xl border border-slate-150 shadow-inner">
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold block uppercase">KPI Cơ Sở Target</span>
-                        <strong className="text-sm font-bold text-slate-800">{rec.baseKpiTarget.toLocaleString()}</strong>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold block uppercase">Tổng điểm đạt được</span>
-                        <strong className="text-sm font-bold text-slate-800">{totalPoints.toLocaleString()}</strong>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold block uppercase">Tỷ lệ hoàn thành</span>
-                        <strong className={`text-sm font-bold ${totalPoints >= rec.baseKpiTarget ? 'text-green-600' : 'text-amber-600'}`}>
-                          {getAchievementRate(totalPoints, rec.baseKpiTarget)}
-                        </strong>
-                      </div>
-                      <div>
-                        <span className="text-[10px] text-slate-400 font-bold block uppercase">Anh văn / Kiểm tra</span>
-                        <strong className="text-sm font-bold text-slate-800">
-                          Nhóm {rec.englishGroup || 'N/A'} {rec.avgTestScore !== null ? `| ${rec.avgTestScore}đ` : ''}
-                        </strong>
-                      </div>
-                    </div>
-
-                    {/* Admin Comments */}
-                    {rec.planComment && (
-                      <div className="p-3 bg-amber-50 border border-amber-250/50 rounded-xl text-xs text-amber-800">
-                        <strong>Ý kiến kế hoạch:</strong> {rec.planComment} <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Người duyệt: {rec.planApprovedBy}</span>
-                      </div>
-                    )}
-                    {rec.reportComment && (
-                      <div className="p-3 bg-indigo-50 border border-indigo-250/50 rounded-xl text-xs text-indigo-800">
-                        <strong>Ý kiến báo cáo:</strong> {rec.reportComment} <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">Người duyệt: {rec.reportApprovedBy}</span>
-                      </div>
-                    )}
-
-                    {/* Metrics detail dropdown details */}
-                    <div className="space-y-1.5">
-                      <span className="text-[10px] font-bold text-slate-400 block uppercase">Danh mục chi tiết công việc ({rec.metrics.length})</span>
-                      <div className="overflow-x-auto border border-slate-100 rounded-xl shadow-sm">
-                        <table className="min-w-full divide-y divide-slate-100 text-left text-xxs">
-                          <thead className="bg-slate-50 text-slate-500 font-extrabold uppercase">
-                            <tr>
-                              <th className="px-3 py-2">Đầu việc</th>
-                              <th className="px-3 py-2">Tiêu đề</th>
-                              <th className="px-3 py-2">Nội dung</th>
-                              <th className="px-2 py-2 text-center">OKR</th>
-                              <th className="px-3 py-2 text-right">KPI Cơ Sở</th>
-                              <th className="px-3 py-2 text-center">Số lượng</th>
-                              <th className="px-3 py-2 text-center">Lỗi</th>
-                              <th className="px-3 py-2 text-right">Tổng điểm</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 bg-white text-slate-600">
-                            {rec.metrics.map((m, idx) => (
-                              <tr key={idx} className="hover:bg-slate-50/50">
-                                <td className="px-3 py-2 font-bold">{m.category}</td>
-                                <td className="px-3 py-2 font-semibold text-slate-800">{m.title}</td>
-                                <td className="px-3 py-2 max-w-xs truncate">{m.content}</td>
-                                <td className="px-2 py-2 text-center font-bold text-sky-600">{m.isOkr ? 'OKR' : ''}</td>
-                                <td className="px-3 py-2 text-right">{m.baseKpi}</td>
-                                <td className="px-3 py-2 text-center font-semibold">{m.quantity}</td>
-                                <td className="px-3 py-2 text-center text-red-500">{m.errorCount || 0}</td>
-                                <td className="px-3 py-2 text-right font-bold text-slate-800">{calculateRowTotal(m)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
