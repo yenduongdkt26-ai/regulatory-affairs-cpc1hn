@@ -2362,7 +2362,7 @@ app.post('/api/kpi/plan', authenticateToken, (req, res) => {
         errorCount: Number(m.errorCount) || 0,
         totalKpi: m.totalKpi !== undefined && m.totalKpi !== '' && m.totalKpi !== null
           ? Math.round(Number(m.totalKpi) * 100) / 100
-          : Math.round((Number(m.baseKpi) || 0) * (Number(m.quantity) || 0) * 100) / 100,
+          : Math.round(((Number(m.baseKpi) || 0) * (Number(m.quantity) || 0) - (Number(m.errorCount) || 0)) * 100) / 100,
         explanation: m.explanation || ''
       }))
     };
@@ -2476,7 +2476,7 @@ app.post('/api/kpi/report', authenticateToken, (req, res) => {
       errorCount: Number(m.errorCount) || 0,
       totalKpi: m.totalKpi !== undefined && m.totalKpi !== '' && m.totalKpi !== null
         ? Math.round(Number(m.totalKpi) * 100) / 100
-        : Math.round((Number(m.baseKpi) || 0) * (Number(m.quantity) || 0) * 100) / 100,
+        : Math.round(((Number(m.baseKpi) || 0) * (Number(m.quantity) || 0) - (Number(m.errorCount) || 0)) * 100) / 100,
       explanation: m.explanation || ''
     }));
 

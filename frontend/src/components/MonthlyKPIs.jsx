@@ -79,7 +79,7 @@ const calculateDefaultSummary = (monthRecords) => {
   monthRecords.forEach(rec => {
     if (rec.metrics && Array.isArray(rec.metrics)) {
       rec.metrics.forEach(m => {
-        if (m.category === "Công việc (làm + check)") {
+        if (m.category === "Công việc (làm + check)" && m.isCompleted !== false) {
           const qty = Number(m.quantity) || 0;
           const title = (m.title || '').trim().toUpperCase();
           if (title === 'HSM') hsm += qty;
@@ -95,13 +95,13 @@ const calculateDefaultSummary = (monthRecords) => {
   });
 
   return {
-    hsm,
-    hsbs,
-    hstd,
-    HSBSTĐ: hsbs_td,
-    hsgh,
-    HSBSGH: hsbs_gh,
-    HSXK_HSBSXK: hsxk_bsxk
+    hsm: Math.round(hsm * 100) / 100,
+    hsbs: Math.round(hsbs * 100) / 100,
+    hstd: Math.round(hstd * 100) / 100,
+    HSBSTĐ: Math.round(hsbs_td * 100) / 100,
+    hsgh: Math.round(hsgh * 100) / 100,
+    HSBSGH: Math.round(hsbs_gh * 100) / 100,
+    HSXK_HSBSXK: Math.round(hsxk_bsxk * 100) / 100
   };
 };
 
@@ -248,10 +248,22 @@ export default function MonthlyKPIs() {
     }
     const base = Number(row.baseKpi) || 0;
     const qty = Number(row.quantity) || 0;
-    const val = row.totalKpi !== undefined && row.totalKpi !== '' && row.totalKpi !== null
-      ? Number(row.totalKpi)
-      : base * qty;
-    
+    const err = Number(row.errorCount) || 0;
+
+    let val;
+    if (row.totalKpi !== undefined && row.totalKpi !== '' && row.totalKpi !== null) {
+      const storedVal = Number(row.totalKpi);
+      const unDeductedBase = Math.round(base * qty * 100) / 100;
+      // If stored totalKpi matches un-deducted base*qty and errorCount > 0, deduct errorCount
+      if (err > 0 && Math.abs(storedVal - unDeductedBase) < 0.01) {
+        val = storedVal - err;
+      } else {
+        val = storedVal;
+      }
+    } else {
+      val = (base * qty) - err;
+    }
+
     const rounded = Math.round(val * 100) / 100;
 
     if (row.category === "Điểm trừ") {
@@ -341,11 +353,13 @@ export default function MonthlyKPIs() {
         copy[idx].baseKpi = val === "Điểm trừ" ? 25 : 10;
       }
       
-      // Recalculate totalKpi automatically when baseKpi or quantity changes
-      if (field === 'baseKpi' || field === 'quantity') {
+      // Recalculate totalKpi automatically when baseKpi, quantity, errorCount, or category changes
+      if (field === 'baseKpi' || field === 'quantity' || field === 'errorCount' || field === 'category') {
         const base = Number(copy[idx].baseKpi) || 0;
         const qty = Number(copy[idx].quantity) || 0;
-        copy[idx].totalKpi = Math.round(base * qty * 100) / 100;
+        const err = Number(copy[idx].errorCount) || 0;
+        const calculated = (base * qty) - err;
+        copy[idx].totalKpi = Math.round(calculated * 100) / 100;
       }
 
       if (field === 'quantity' && val !== '' && val !== null && !isNaN(val)) {
@@ -647,7 +661,7 @@ export default function MonthlyKPIs() {
                    <td class="text-right">${m.baseKpi}</td>
                    <td class="text-center">${m.quantity}</td>
                    <td class="text-center" style="color: ${m.errorCount > 0 ? '#ef4444' : '#475569'}">${m.errorCount || 0}</td>
-                   <td class="text-right font-bold">${(m.baseKpi * m.quantity) - (m.errorCount || 0)}</td>
+                   <td class="text-right font-bold">${calculateRowTotal(m)}</td>
                 </tr>
               `).join('')}
             </tbody>
@@ -739,7 +753,7 @@ export default function MonthlyKPIs() {
   };
 
   const getCategoryScore = (rec, category, title = null) => {
-    return rec.metrics
+    const sum = rec.metrics
       .filter(m => {
         if (title) {
           return m.category === category && m.title === title;
@@ -747,6 +761,7 @@ export default function MonthlyKPIs() {
         return m.category === category;
       })
       .reduce((sum, m) => sum + calculateRowTotal(m), 0);
+    return Math.round(sum * 100) / 100;
   };
 
   const getReviewVal = (rec, field) => {
